@@ -579,4 +579,229 @@ local function refreshEggs()
 			label(iconFrame,{Size=UDim2.fromScale(1,1),Text=(tostring(e.Name):match(utf8.charpattern) or "?"):upper(),Font=F.GothamBlack,TextSize=15,TextColor3=rc,TextXAlignment=CENTER,TextYAlignment=Enum.TextYAlignment.Center})
 		end
 		label(r,{Size=UDim2.new(1,-iconSize-18,0,17),Position=UDim2.fromOffset(iconSize+14,8),Text=tostring(e.Name),Font=F.GothamBold,TextSize=11,TextTruncate=Enum.TextTruncate.AtEnd})
-		label(r,{Size=UDim2.new(1,-iconSize-1
+			local lb=label(b,{Size=UDim2.new(1,-34,1,0),Position=UDim2.fromOffset(30,0),Text=r.Name,Font=F.GothamBold,TextColor3=T.Sub,TextTruncate=Enum.TextTruncate.AtEnd})
+	chips[r.Name]={Btn=b,Stroke=st,Lbl=lb,Color=r.Color}
+	b.Activated:Connect(function() Panel.State.Rarities[r.Name]=not Panel.State.Rarities[r.Name]; styleRarity(r.Name); rarityChanged() end)
+	styleRarity(r.Name)
+end
+do
+	local r=row(cC,pAuto,"Atalhos",46); r:FindFirstChildOfClass("TextLabel"):Destroy()
+	local function shortcut(text,x,fn)
+		local b=new("TextButton",{Size=UDim2.new(1/3,-12,0,30),Position=UDim2.new((x-1)/3,x==1 and 12 or 6,0,10),BackgroundColor3=T.Row,Text=text,Font=F.GothamBold,TextSize=11,TextColor3=T.G1,AutoButtonColor=false},r)
+		corner(b,"pill"); stroke(b,T.Stroke,1); juice(b,1.05)
+		b.Activated:Connect(function() fn(); for _,rr in ipairs(RARITIES) do styleRarity(rr.Name) end; rarityChanged() end)
+	end
+	shortcut("Todos",1,function() for _,rr in ipairs(RARITIES) do Panel.State.Rarities[rr.Name]=true end end)
+	shortcut("Nenhum",2,function() table.clear(Panel.State.Rarities) end)
+	shortcut("Secreto+",3,function()
+		table.clear(Panel.State.Rarities)
+		local from=1
+		for i,rr in ipairs(RARITIES) do if rr.Name=="Secreto" then from=i end end
+		for i=from,#RARITIES do Panel.State.Rarities[RARITIES[i].Name]=true end
+	end)
+end
+local startBtn
+function Panel.setAutoRunning(on) Panel.State.Auto=on; startBtn.Text=on and "ATIVO" or "START" end
+startBtn=controlRow(cC,pAuto,"START","STOP",function()
+	local list=Panel.getSelectedRarities()
+	if #list==0 then selInfo.Text="Escolha 1 raridade"; selInfo.TextColor3=T.Red; task.delay(1.6,function() if selInfo.Parent then refreshSel() end end); return end
+	Panel.setAutoRunning(true); Panel.setStatus("Auto iniciado ("..#list.." raridades)","Auto")
+	notifyOk("Auto iniciado",#list.." raridades selecionadas"); hook("onAutoStart",list)
+end,function()
+	Panel.setAutoRunning(false); Panel.setStatus("Auto parado.","Idle"); hook("onAutoStop")
+end)
+refreshSel()
+
+local pSpeed=addTab("Velocidade","Ajuste de velocidade",iconSpeed)
+local cS=card(pSpeed,"Left","Velocidade")
+local setSpeedOn=addToggle(cS,pSpeed,"Ativar velocidade",false,function(v)
+	Panel.State.SpeedOn=v; hook("onSpeedToggle",v)
+	toast({Title=v and "Speed ativado" or "Speed desativado",Body="WalkSpeed: "..Panel.State.Speed,Color=v and T.G1 or T.Sub,Icon=ICONS.speed,Duration=3})
+end)
+local setSpeed=addSlider(cS,pSpeed,"WalkSpeed",1,700,16,function(v) Panel.State.Speed=v; hook("onSpeed",v) end)
+local cS2=card(pSpeed,"Right","Atalhos")
+addButton(cS2,pSpeed,"Restaurar padrão (16)",function() setSpeed(16) end)
+addButton(cS2,pSpeed,"Speed 700 (ligar)",function() setSpeed(700); setSpeedOn(true) end)
+
+local pLag=addTab("Anti-Lag","Otimização do jogo",iconLag)
+local cL=card(pLag,"Left","Otimizações")
+local cL2=card(pLag,"Right","Status")
+local lagInfo=addInfo(cL2,pLag,"FPS Atual","--")
+task.spawn(function() while true do RunService.RenderStepped:Wait(); if lagInfo and lagInfo.Parent then if fpsLabel then lagInfo.Text=fpsLabel.Text end end end end)
+addToggle(cL,pLag,"Desligar sombras",false,function(on) pcall(function() Lighting.GlobalShadows=not on; Lighting.ShadowSoftness=on and 0 or 0.2 end) end)
+addToggle(cL,pLag,"Remover decais/texturas",false,function(on) pcall(function() for _,obj in workspace:GetDescendants() do if obj:IsA("Decal") or obj:IsA("Texture") then obj.Transparency=on and 1 or 0 end end end) end)
+addToggle(cL,pLag,"Remover partículas do mapa",false,function(on) pcall(function() for _,obj in workspace:GetDescendants() do if obj:IsA("ParticleEmitter") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then obj.Enabled=not on end end end) end)
+addToggle(cL,pLag,"Reduzir distância de render",false,function(on) pcall(function() workspace.StreamingEnabled=on; if on then workspace.StreamingMinRadius=64; workspace.StreamingTargetRadius=128 end end) end)
+addToggle(cL,pLag,"Desligar pós-processamento",false,function(on) pcall(function() for _,ef in Lighting:GetChildren() do if ef:IsA("PostEffect") then ef.Enabled=not on end end end) end)
+addToggle(cL,pLag,"Parar animações de NPC",false,function(on) pcall(function() for _,obj in workspace:GetDescendants() do if obj:IsA("AnimationController") or obj:IsA("Animator") then if on then pcall(function() obj.Parent.Parent:FindFirstChildOfClass("Humanoid").WalkSpeed=0 end) else pcall(function() obj.Parent.Parent:FindFirstChildOfClass("Humanoid").WalkSpeed=16 end) end end end end) end)
+addButton(cL,pLag,"Aplicar tudo (máx performance)",function()
+	pcall(function() Lighting.GlobalShadows=false end)
+	pcall(function() for _,obj in workspace:GetDescendants() do if obj:IsA("Decal") or obj:IsA("Texture") then obj.Transparency=1 end; if obj:IsA("ParticleEmitter") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then obj.Enabled=false end end; for _,ef in Lighting:GetChildren() do if ef:IsA("PostEffect") then ef.Enabled=false end end end)
+	Panel.setStatus("Anti-lag máximo","Lag"); notifyWarn("Anti-Lag","Modo máximo de performance ativado")
+end)
+addButton(cL,pLag,"Restaurar gráficos",function()
+	pcall(function() Lighting.GlobalShadows=true end)
+	pcall(function() for _,obj in workspace:GetDescendants() do if obj:IsA("Decal") or obj:IsA("Texture") then obj.Transparency=0 end; if obj:IsA("ParticleEmitter") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then obj.Enabled=true end end; for _,ef in Lighting:GetChildren() do if ef:IsA("PostEffect") then ef.Enabled=true end end end)
+	Panel.setStatus("Gráficos restaurados","Idle"); notifyOk("Gráficos","Configurações restauradas")
+end)
+
+local pCfg=addTab("Config","Ajustes do painel",iconGear)
+local cG=card(pCfg,"Left","Painel")
+addInfo(cG,pCfg,"Painel","APEX HUB")
+addInfo(cG,pCfg,"Versão","v3.0")
+addInfo(cG,pCfg,"Key","Validada")
+addButton(cG,pCfg,"Fechar e remover painel",function() gui:Destroy() end)
+
+function Panel.destroy() gui:Destroy() end
+do local env=(type(getgenv)=="function" and getgenv()) or _G; env.APEX_Panel=Panel end
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	local q=searchBox.Text:lower(); local p=current and pages[current]
+	if not p then return end
+	for _,r in ipairs(p.Rows) do r.Visible=(q=="") or(r.Name:lower():find(q,1,true)~=nil) end
+	if current=="Alvo" then for _,r in pairs(eggRows) do r.Visible=(q=="") or(r.Name:lower():find(q,1,true)~=nil) end end
+end)
+
+local open=false
+local function setOpen(v)
+	open=v; closeMenu()
+	if v then
+		root.Visible=true; rootSc.Scale=0
+		tween(rootSc,0.55,{Scale=fitScale()},BACK)
+		for i,n in ipairs(tabOrder) do
+			local b=tabs[n].Btn; local sc=b:FindFirstChildOfClass("UIScale")
+			if sc then sc.Scale=0; task.delay(0.2+(i-1)*0.07,function() tween(sc,0.4,{Scale=1},BACK) end) end
+		end
+	else
+		tween(rootSc,0.25,{Scale=0},BACK,Enum.EasingDirection.In)
+		task.delay(0.27,function() if not open then root.Visible=false end end)
+	end
+end
+local fabStart
+fab.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then fabStart=fab.AbsolutePosition end end)
+fab.InputEnded:Connect(function() if fabStart and(fab.AbsolutePosition-fabStart).Magnitude<6 then setOpen(not open) end; fabStart=nil end)
+minBtn.Activated:Connect(function() setOpen(false) end)
+draggable(header,root)
+tabs["Alvo"].Select()
+
+local function runIntro()
+	fab.Visible=false
+	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
+	local sg=gradient(splash,ColorSequence.new(Color3.fromRGB(0,0,0),Color3.fromRGB(5,18,42)),90)
+	particles(splash,22)
+	local box=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(460,130),BackgroundTransparency=1,ZIndex=151},splash)
+	local letters=new("Frame",{Size=UDim2.new(1,0,0,72),BackgroundTransparency=1,ZIndex=151},box)
+	new("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,HorizontalAlignment=Enum.HorizontalAlignment.Center,VerticalAlignment=Enum.VerticalAlignment.Center,Padding=UDim.new(0,8)},letters)
+	local parts={}
+	for i,ch in ipairs({"A","P","E","X"}) do
+		local l=new("TextLabel",{Size=UDim2.fromOffset(54,72),BackgroundTransparency=1,Text=ch,Font=F.GothamBlack,TextSize=66,TextColor3=Color3.new(1,1,1),TextTransparency=1,ZIndex=152,LayoutOrder=i},letters)
+		local sc=new("UIScale",{Scale=2.4},l); gradient(l,ACCENT,90); parts[i]={l,sc}
+	end
+	local line=new("Frame",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,80),Size=UDim2.fromOffset(0,3),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0,ZIndex=151},box)
+	corner(line,"pill"); gradient(line,ACCENT,0)
+	local best=new("TextLabel",{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,94),BackgroundTransparency=1,Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
+	local bestSc=new("UIScale",{Scale=0.6},best)
+	task.spawn(function()
+		for i,p in ipairs(parts) do task.delay((i-1)*0.13,function() tween(p[1],0.35,{TextTransparency=0}); TweenService:Create(p[2],TweenInfo.new(0.5,BACK,Enum.EasingDirection.Out),{Scale=1}):Play() end) end
+		task.wait(0.75); tween(line,0.5,{Size=UDim2.fromOffset(300,3)}); tween(best,0.5,{TextTransparency=0}); TweenService:Create(bestSc,TweenInfo.new(0.5,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
+		task.wait(1.3)
+		for _,p in ipairs(parts) do tween(p[1],0.4,{TextTransparency=1}) end
+		tween(best,0.4,{TextTransparency=1}); tween(line,0.4,{Size=UDim2.fromOffset(0,3)})
+		task.wait(0.3); tween(splash,0.5,{BackgroundTransparency=1}); sg.Enabled=false
+		task.wait(0.5); splash:Destroy(); fabSc.Scale=0; fab.Visible=true
+		TweenService:Create(fabSc,TweenInfo.new(0.5,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
+		task.wait(0.3); setOpen(true)
+	end)
+end
+
+local function runLoading(onDone)
+	local ls=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.fromRGB(3,7,18),BorderSizePixel=0,ZIndex=200},gui)
+	gradient(ls,ColorSequence.new(Color3.fromRGB(5,18,42),Color3.fromRGB(0,0,0)),90); particles(ls,18)
+	local logoBox=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.42,0),Size=UDim2.fromOffset(72,72),BackgroundColor3=Color3.new(1,1,1),ZIndex=201},ls)
+	corner(logoBox,20); spin(gradient(logoBox,ACCENT,45),90)
+	local logoSc=new("UIScale",{Scale=0},logoBox); tween(logoSc,0.6,{Scale=1},BACK); loop(logoSc,1.4,{Scale=1.08})
+	local loadAvatar=new("ImageLabel",{Size=UDim2.fromOffset(60,60),AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),BackgroundTransparency=1,ZIndex=202},logoBox)
+	corner(loadAvatar,16)
+	task.spawn(function() pcall(function() loadAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end) end)
+	local loadTitle=label(ls,{Size=UDim2.new(1,0,0,30),Position=UDim2.new(0,0,0.52,10),Text="APEX HUB THE BEST",Font=F.GothamBlack,TextSize=22,TextXAlignment=CENTER,ZIndex=201})
+	gradient(loadTitle,ACCENT,0)
+	local msgs={"Iniciando o motor Nexus...","Conectando aos servidores...","Carregando ovos...","Quase lá..."}
+	local msgLabel=label(ls,{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0.60,0),Text=msgs[1],Font=F.GothamBold,TextSize=13,TextColor3=T.Sub,TextXAlignment=CENTER,ZIndex=201})
+	local barBg=new("Frame",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0.65,0),Size=UDim2.fromOffset(260,5),BackgroundColor3=T.Row,BorderSizePixel=0,ZIndex=201},ls)
+	corner(barBg,"pill")
+	local barFill=new("Frame",{Size=UDim2.fromScale(0,1),BackgroundColor3=Color3.new(1,1,1)},barBg)
+	corner(barFill,"pill"); gradient(barFill,ACCENT,0)
+	label(ls,{Size=UDim2.new(1,0,0,16),Position=UDim2.new(0,0,0.92,0),Text="v3.0  ·  Steal An Egg  ·  Motor Nexus",Font=F.GothamBold,TextSize=11,TextColor3=T.Sub,TextXAlignment=CENTER,ZIndex=201})
+	task.spawn(function()
+		for i=1,#msgs do msgLabel.Text=msgs[i]; tween(barFill,0.5,{Size=UDim2.fromScale(i/#msgs,1)},Enum.EasingStyle.Quad); task.wait(0.5) end
+		task.wait(0.3); tween(ls,0.6,{BackgroundTransparency=1}); task.wait(0.4); ls:Destroy(); onDone()
+	end)
+end
+
+local function runGate()
+	fab.Visible=false
+	local gate=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.2,BorderSizePixel=0,ZIndex=160,Active=true},gui)
+	particles(gate,18)
+	local box=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(380,292),BackgroundColor3=Color3.new(1,1,1)},gate)
+	corner(box,26); gradient(box,ColorSequence.new(Color3.fromRGB(10,24,48),T.Bg),60)
+	local bs=stroke(box,Color3.new(1,1,1),2,0.05)
+	spin(gradient(bs,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2)}),30),70)
+	local boxSc=new("UIScale",{Scale=0},box); tween(boxSc,0.6,{Scale=math.min(1,fitScale()+0.15)},BACK)
+	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
+	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
+	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
+	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
+	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
+	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
+	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
+	local inStroke=stroke(inWrap,T.Stroke,1.5)
+	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
+	do
+		local sh=new("Frame",{Size=UDim2.fromOffset(10,12),Position=UDim2.fromOffset(19,9),BackgroundTransparency=1},inWrap)
+		corner(sh,"pill"); new("UIStroke",{Color=T.G1,Thickness=2,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},sh)
+		local bd=new("Frame",{Size=UDim2.fromOffset(16,12),Position=UDim2.fromOffset(16,20),BackgroundColor3=T.G1,BorderSizePixel=0},inWrap); corner(bd,4)
+	end
+	input.Focused:Connect(function() tween(inStroke,0.2,{Color=T.G1}) end)
+	input.FocusLost:Connect(function(enter) tween(inStroke,0.2,{Color=T.Stroke}); if enter then task.defer(function() Panel._verify() end) end end)
+	local msg=label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,196),Text="",Font=F.GothamBold,TextSize=12,TextXAlignment=CENTER})
+	local btn=primary(box,{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,224),Text="VERIFICAR",Font=F.GothamBlack,TextSize=14,TextColor3=T.Bg})
+	local function successAnim(cb)
+		local flash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.G1,BackgroundTransparency=1,ZIndex=170},box)
+		corner(flash,26); tween(flash,0.15,{BackgroundTransparency=0.3}); task.wait(0.1); tween(flash,0.3,{BackgroundTransparency=1})
+		local letters={"A","P","E","X"}
+		local offsets={Vector2.new(-120,-80),Vector2.new(-40,-100),Vector2.new(40,-100),Vector2.new(120,-80)}
+		local lparts={}
+		for i,ch in ipairs(letters) do
+			local lf=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.fromOffset(44,60),BackgroundTransparency=1,Text=ch,Font=F.GothamBlack,TextSize=52,TextColor3=T.G1,ZIndex=175},gate)
+			gradient(lf,ACCENT,90); lparts[#lparts+1]=lf; local sc=new("UIScale",{Scale=1},lf)
+			task.delay((i-1)*0.06,function() tween(lf,0.55,{Position=UDim2.new(0.5,offsets[i].X,0.5,offsets[i].Y),Rotation=math.random(-180,180),TextTransparency=1},BACK,Enum.EasingDirection.Out); tween(sc,0.55,{Scale=2.2},BACK) end)
+		end
+		for _=1,20 do
+			local px=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,math.random(-10,10),0.5,math.random(-10,10)),Size=UDim2.fromOffset(math.random(5,12),math.random(5,12)),BackgroundColor3=math.random()>0.5 and T.G1 or T.G2,BorderSizePixel=0,ZIndex=174},gate)
+			corner(px,"pill")
+			tween(px,0.7,{Position=UDim2.new(0.5,math.random(-200,200),0.5,math.random(-200,200)),BackgroundTransparency=1,Size=UDim2.fromOffset(math.random(2,5),math.random(2,5))},Enum.EasingStyle.Quad,Enum.EasingDirection.Out)
+			task.delay(0.7,function() pcall(function() px:Destroy() end) end)
+		end
+		task.wait(0.6)
+		for _,lf in ipairs(lparts) do pcall(function() lf:Destroy() end) end
+		tween(boxSc,0.4,{Scale=0},BACK,Enum.EasingDirection.In); tween(gate,0.4,{BackgroundTransparency=1}); task.wait(0.45); gate:Destroy(); cb()
+	end
+	local busy=false
+	function Panel._verify()
+		if busy then return end; busy=true
+		local txt=(input.Text:gsub("%s+","")):lower(); msg.Text=""
+		task.spawn(function()
+			for i=1,6 do btn.Text="VERIFICANDO"..string.rep(".",i%4); task.wait(0.14) end
+			if txt==KEY then
+				Panel.KeyOK=true; btn.Text="ACESSO LIBERADO"; msg.TextColor3=T.G1; msg.Text="Key válida! Bem-vindo."; tween(inStroke,0.2,{Color=T.G1}); task.wait(0.4); successAnim(function() runLoading(runIntro) end)
+			else
+				btn.Text="VERIFICAR"; msg.TextColor3=T.Red; msg.Text="Key inválida. Tente novamente."; tween(inStroke,0.15,{Color=T.Red})
+				for _,dx in ipairs({-12,12,-9,9,-5,5,0}) do tween(box,0.05,{Position=UDim2.new(0.5,dx,0.5,0)}); task.wait(0.05) end
+				task.wait(0.3); tween(inStroke,0.3,{Color=T.Stroke}); busy=false
+			end
+		end)
+	end
+	btn.Activated:Connect(function() Panel._verify() end)
+end
+
+runGate()
