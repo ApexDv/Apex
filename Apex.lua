@@ -96,7 +96,6 @@ local function chev(parent,tx,ty,dir,col,L,th)
 	return bars
 end
 
--- ÍCONES DAS ABAS
 local function iconTarget(ic)
 	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(20,20),BackgroundTransparency=1},ic)
 	corner(ring,"pill")
@@ -208,7 +207,6 @@ corner(header,16); stroke(header,T.Stroke,1)
 local logo=new("Frame",{Size=UDim2.fromOffset(30,30),Position=UDim2.fromOffset(8,7),BackgroundColor3=Color3.new(1,1,1)},header)
 corner(logo,10); spin(gradient(logo,ACCENT,45),80)
 label(header,{Size=UDim2.fromOffset(84,44),Position=UDim2.fromOffset(46,0),Text="APEX HUB",Font=F.GothamBlack,TextSize=14})
-label(header,{Size=UDim2.fromOffset(100,44),Position=UDim2.fromOffset(132,0),Text="/ Steal An Egg",TextSize=11,TextColor3=T.Sub})
 local minBtn=new("TextButton",{Size=UDim2.fromOffset(30,30),Position=UDim2.new(1,-38,0,7),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},header)
 corner(minBtn,"pill"); stroke(minBtn,T.Stroke,1); juice(minBtn,1.08)
 local minBar=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(12,3),BackgroundColor3=T.G1,BorderSizePixel=0},minBtn); corner(minBar,"pill")
@@ -264,6 +262,14 @@ local pSpeed = addTab("Velocidade","Ajuste de velocidade",iconSpeed)
 local pLag = addTab("Anti-Lag","Otimização",iconLag)
 local pCfg = addTab("Config","Ajustes",iconGear)
 
+local cCfg = new("Frame",{Size=UDim2.new(1,0,0,400),BackgroundTransparency=1},pCfg.Left)
+local btnUp = new("TextButton",{Size=UDim2.fromOffset(100,30),Position=UDim2.new(1,-100,0,0),BackgroundColor3=T.G2,Text="UPLOAD",TextColor3=T.Text,Font=F.GothamBold,TextSize=10},cCfg); corner(btnUp,"pill")
+for i=1,4 do
+	local row = new("Frame",{Size=UDim2.new(1,0,0,40),Position=UDim2.fromOffset(0,50+(i-1)*45),BackgroundColor3=T.Row},cCfg); corner(row,10)
+	local b1 = new("TextButton",{Size=UDim2.fromOffset(80,25),Position=UDim2.new(0,10,0.5,-12),BackgroundColor3=T.Bg,Text="DELETE",TextColor3=T.Text,Font=F.GothamBold,TextSize=10},row); corner(b1,"pill")
+	local b2 = new("TextButton",{Size=UDim2.fromOffset(80,25),Position=UDim2.new(1,-90,0.5,-12),BackgroundColor3=T.G2,Text="EXECUTE",TextColor3=T.Text,Font=F.GothamBold,TextSize=10},row); corner(b2,"pill")
+end
+
 local open=false
 local function setOpen(v)
 	open=v
@@ -305,6 +311,22 @@ local function runGate()
 	corner(btn,"pill"); juice(btn,1.04)
 	btn.Activated:Connect(function()
 		if (input.Text:gsub("%s+","")):lower()==KEY then
+			local flash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.G1,BackgroundTransparency=1,ZIndex=170},box); corner(flash,26)
+			tween(flash,0.15,{BackgroundTransparency=0.3}); task.wait(0.1); tween(flash,0.3,{BackgroundTransparency=1})
+			local letters={"A","P","E","X"}
+			local offsets={Vector2.new(-120,-80),Vector2.new(-40,-100),Vector2.new(40,-100),Vector2.new(120,-80)}
+			for i,ch in ipairs(letters) do
+				local lf=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.fromOffset(44,60),BackgroundTransparency=1,Text=ch,Font=F.GothamBlack,TextSize=52,TextColor3=T.G1,ZIndex=175},gate)
+				gradient(lf,ACCENT,90); local sc=new("UIScale",{Scale=1},lf)
+				task.delay((i-1)*0.06,function() tween(lf,0.55,{Position=UDim2.new(0.5,offsets[i].X,0.5,offsets[i].Y),Rotation=math.random(-180,180),TextTransparency=1},BACK,Enum.EasingDirection.Out); tween(sc,0.55,{Scale=2.2},BACK) end)
+			end
+			for _=1,20 do
+				local px=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,math.random(-10,10),0.5,math.random(-10,10)),Size=UDim2.fromOffset(math.random(5,12),math.random(5,12)),BackgroundColor3=math.random()>0.5 and T.G1 or T.G2,BorderSizePixel=0,ZIndex=174},gate)
+				corner(px,"pill")
+				tween(px,0.7,{Position=UDim2.new(0.5,math.random(-200,200),0.5,math.random(-200,200)),BackgroundTransparency=1,Size=UDim2.fromOffset(math.random(2,5),math.random(2,5))},Enum.EasingStyle.Quad,Enum.EasingDirection.Out)
+				task.delay(0.7,function() pcall(function() px:Destroy() end) end)
+			end
+			task.wait(0.6)
 			gate:Destroy(); fab.Visible=true; setOpen(true); notifyOk("Key válida","Bem-vindo!")
 		else
 			notifyWarn("Key inválida","Tente novamente")
