@@ -85,7 +85,6 @@ local function particles(parent,n)
 		end)
 	end
 end
-
 local function chev(parent,tx,ty,dir,col,L,th)
 	L=L or 8; th=th or 2.5; local d=L/2*0.7071; local bars={}
 	local function bar(cx,cy,rot)
@@ -95,7 +94,6 @@ local function chev(parent,tx,ty,dir,col,L,th)
 	if dir=="right" then bar(tx-d,ty-d,45); bar(tx-d,ty+d,-45) else bar(tx-d,ty-d,45); bar(tx+d,ty-d,-45) end
 	return bars
 end
-
 local function iconTarget(ic)
 	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(20,20),BackgroundTransparency=1},ic)
 	corner(ring,"pill")
@@ -165,11 +163,9 @@ local fabSc=new("UIScale",{Scale=1},fab)
 local fabAvatar=new("ImageLabel",{Size=UDim2.fromOffset(44,44),AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),BackgroundTransparency=1,ScaleType=Enum.ScaleType.Crop},fab)
 corner(fabAvatar,"pill")
 task.spawn(function() pcall(function() fabAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end) end)
-
 local fpsPill=new("Frame",{Size=UDim2.fromOffset(80,20),Position=UDim2.new(0,76,0.5,-10),BackgroundColor3=Color3.fromRGB(8,14,10)},gui)
 corner(fpsPill,"pill"); stroke(fpsPill,T.Stroke,1)
 fpsLabel=label(fpsPill,{Size=UDim2.fromScale(1,1),TextXAlignment=CENTER,Font=F.GothamBold,TextSize=11,Text="-- FPS"})
-
 local toastLayer=new("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,60),Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,ZIndex=70},gui)
 new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Right},toastLayer)
 local toastCount=0
@@ -210,19 +206,16 @@ label(header,{Size=UDim2.fromOffset(84,44),Position=UDim2.fromOffset(46,0),Text=
 local minBtn=new("TextButton",{Size=UDim2.fromOffset(30,30),Position=UDim2.new(1,-38,0,7),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},header)
 corner(minBtn,"pill"); stroke(minBtn,T.Stroke,1); juice(minBtn,1.08)
 local minBar=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(12,3),BackgroundColor3=T.G1,BorderSizePixel=0},minBtn); corner(minBar,"pill")
-
 local rail=new("Frame",{Size=UDim2.new(0,52,1,-74),Position=UDim2.fromOffset(10,64),BackgroundColor3=T.Rail,BackgroundTransparency=0.3},main)
 corner(rail,18); stroke(rail,T.Stroke,1)
 local tabIndicator=new("Frame",{Size=UDim2.fromOffset(40,40),Position=UDim2.fromOffset(6,10),BackgroundColor3=Color3.new(1,1,1),ZIndex=1},rail)
 corner(tabIndicator,14); spin(gradient(tabIndicator,ACCENT,45),60)
 local tabHolder=new("Frame",{Size=UDim2.new(1,0,1,-70),Position=UDim2.fromOffset(0,10),BackgroundTransparency=1,ZIndex=2},rail)
 new("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center},tabHolder)
-
 local content=new("Frame",{Size=UDim2.new(1,-80,1,-74),Position=UDim2.fromOffset(70,64),BackgroundTransparency=1},main)
 local pageTitle=label(content,{Size=UDim2.new(1,-12,0,26),Position=UDim2.fromOffset(6,0),Text="",Font=F.GothamBlack,TextSize=20})
 local pageSub=label(content,{Size=UDim2.new(1,-12,0,14),Position=UDim2.fromOffset(6,26),Text="",TextSize=11,TextColor3=T.Sub})
 local pageHolder=new("Frame",{Size=UDim2.new(1,0,1,-48),Position=UDim2.fromOffset(0,48),BackgroundTransparency=1},content)
-
 local pages,tabs,tabOrder,current={},{},{},nil
 local function newPage(name)
 	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
@@ -255,13 +248,11 @@ local function addTab(name,subtitle,icon)
 	end
 	b.Activated:Connect(tabs[name].Select); return page
 end
-
 local pAlvo = addTab("Alvo","Escolha o ovo e o modo",iconTarget)
 local pAuto = addTab("Auto","Escolha as raridades",iconAuto)
 local pSpeed = addTab("Velocidade","Ajuste de velocidade",iconSpeed)
 local pLag = addTab("Anti-Lag","Otimização",iconLag)
 local pCfg = addTab("Config","Ajustes",iconGear)
-
 local cCfg = new("Frame",{Size=UDim2.new(1,0,0,400),BackgroundTransparency=1},pCfg.Left)
 local btnUp = new("TextButton",{Size=UDim2.fromOffset(100,30),Position=UDim2.new(1,-100,0,0),BackgroundColor3=T.G2,Text="UPLOAD",TextColor3=T.Text,Font=F.GothamBold,TextSize=10},cCfg); corner(btnUp,"pill")
 for i=1,4 do
@@ -269,7 +260,6 @@ for i=1,4 do
 	local b1 = new("TextButton",{Size=UDim2.fromOffset(80,25),Position=UDim2.new(0,10,0.5,-12),BackgroundColor3=T.Bg,Text="DELETE",TextColor3=T.Text,Font=F.GothamBold,TextSize=10},row); corner(b1,"pill")
 	local b2 = new("TextButton",{Size=UDim2.fromOffset(80,25),Position=UDim2.new(1,-90,0.5,-12),BackgroundColor3=T.G2,Text="EXECUTE",TextColor3=T.Text,Font=F.GothamBold,TextSize=10},row); corner(b2,"pill")
 end
-
 local open=false
 local function setOpen(v)
 	open=v
@@ -294,20 +284,20 @@ local function runGate()
 	fab.Visible=false
 	local gate=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.2,BorderSizePixel=0,ZIndex=160,Active=true},gui)
 	particles(gate,18)
-	local box=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(380,292),BackgroundColor3=Color3.new(1,1,1)},gate)
+	local box=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(380,310),BackgroundColor3=Color3.new(1,1,1)},gate)
 	corner(box,26); gradient(box,ColorSequence.new(Color3.fromRGB(10,24,48),T.Bg),60)
 	local bs=stroke(box,Color3.new(1,1,1),2,0.05)
 	spin(gradient(bs,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2)}),30),70)
 	local boxSc=new("UIScale",{Scale=0},box); tween(boxSc,0.6,{Scale=1},BACK)
 	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
-	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
-	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
-	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
-	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
-	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
-	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
-	local btn=new("TextButton",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,224),BackgroundColor3=T.G1,Text="VERIFICAR",Font=F.GothamBlack,TextSize=14,TextColor3=T.Bg,AutoButtonColor=false},box)
+	local lockBox = new("TextLabel", {AnchorPoint = Vector2.new(0.5, 0),Position = UDim2.new(0.5, 0, 0, 22),Size = UDim2.fromOffset(64, 64),BackgroundColor3 = T.G1,Text = "🔒",TextSize = 32,TextColor3 = T.Bg,Font = F.GothamBlack,ZIndex = 2}, box)
+	corner(lockBox, 18); spin(gradient(lockBox, ACCENT, 45), 90); local lockSc = new("UIScale", {Scale = 1}, lockBox); loop(lockSc, 1.2, {Scale = 1.1})
+	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,100),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
+	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,127),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
+	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,160),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
+	local input=new("TextBox",{Size=UDim2.new(1,-20,1,0),Position=UDim2.fromOffset(10,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=CENTER},inWrap)
+	local btn=new("TextButton",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,225),BackgroundColor3=T.G1,Text="VERIFICAR",Font=F.GothamBlack,TextSize=14,TextColor3=T.Bg,AutoButtonColor=false},box)
 	corner(btn,"pill"); juice(btn,1.04)
 	btn.Activated:Connect(function()
 		if (input.Text:gsub("%s+","")):lower()==KEY then
