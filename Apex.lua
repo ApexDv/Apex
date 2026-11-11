@@ -334,6 +334,146 @@ addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
 addTab("Survival",   "Infinite Status",         iconHeart)
 addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
 addTab("Config",     "Ajustes do painel",       iconGear)
+-- ===================== CONTEÚDO DA ABA ALVO =====================
+local alvoPage = pages["Alvo"].Scroll
+new("UIPadding", {PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, alvoPage)
+new("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, alvoPage)
+
+-- Título da seção
+label(alvoPage, {
+    Size = UDim2.new(1, 0, 0, 24),
+    Text = "ALVOS DISPONÍVEIS",
+    Font = F.GothamBlack,
+    TextSize = 14,
+    TextColor3 = T.Sub,
+    TextXAlignment = LEFT
+})
+
+-- Função pra criar os botões de seleção (Ovos)
+local function CreateTargetButton(title, desc, price)
+    local btn = new("TextButton", {
+        Size = UDim2.new(1, 0, 0, 52),
+        BackgroundColor3 = T.Card,
+        Text = "",
+        AutoButtonColor = false
+    }, alvoPage)
+    corner(btn, 12); stroke(btn, T.Stroke, 1)
+    juice(btn, 1.02)
+
+    -- Nome do alvo
+    label(btn, {
+        Size = UDim2.new(1, -20, 0, 20),
+        Position = UDim2.fromOffset(16, 10),
+        Text = title,
+        Font = F.GothamBold,
+        TextSize = 14,
+        TextXAlignment = LEFT
+    })
+
+    -- Descrição
+    label(btn, {
+        Size = UDim2.new(1, -20, 0, 14),
+        Position = UDim2.fromOffset(16, 28),
+        Text = desc,
+        Font = F.Gotham,
+        TextSize = 11,
+        TextColor3 = T.Sub,
+        TextXAlignment = LEFT
+    })
+
+    -- Preço / Status
+    label(btn, {
+        Size = UDim2.fromOffset(100, 52),
+        Position = UDim2.new(1, -116, 0, 0),
+        Text = price,
+        Font = F.GothamBlack,
+        TextSize = 13,
+        TextColor3 = T.Gold,
+        TextXAlignment = RIGHT
+    })
+
+    btn.MouseButton1Click:Connect(function()
+        toast({Title = "ALVO DEFINIDO", Body = title, Icon = "✓", Color = T.G1})
+        -- Animação de clique
+        local origColor = btn.BackgroundColor3
+        btn.BackgroundColor3 = T.G2
+        task.wait(0.15)
+        tween(btn, 0.3, {BackgroundColor3 = origColor})
+    end)
+end
+
+-- Criando os alvos com nomes agressivos
+CreateTargetButton("OVO MÍTICO", "Raridade máxima, chance de spawn baixa.", "1.5M")
+CreateTargetButton("OVO LENDÁRIO", "Alta chance de pets raros.", "500K")
+CreateTargetButton("OVO ÉPICO", "Farm rápido para iniciantes.", "50K")
+
+-- Título da seção 2
+label(alvoPage, {
+    Size = UDim2.new(1, 0, 0, 34),
+    Text = "MODO DE EXECUÇÃO",
+    Font = F.GothamBlack,
+    TextSize = 14,
+    TextColor3 = T.Sub,
+    TextXAlignment = LEFT
+})
+
+-- Toggle de Auto-Farm
+local rowAuto = new("Frame", {
+    Size = UDim2.new(1, 0, 0, 54),
+    BackgroundColor3 = T.Card
+}, alvoPage)
+corner(rowAuto, 12); stroke(rowAuto, T.Stroke, 1)
+
+label(rowAuto, {
+    Size = UDim2.new(1, -80, 1, 0),
+    Position = UDim2.fromOffset(16, 0),
+    Text = "AUTO-SNIPER",
+    Font = F.GothamBlack,
+    TextSize = 14
+})
+
+label(rowAuto, {
+    Size = UDim2.new(1, -80, 0, 14),
+    Position = UDim2.fromOffset(16, 32),
+    Text = "Rouba o ovo assim que ele spawnar.",
+    Font = F.Gotham,
+    TextSize = 10,
+    TextColor3 = T.Sub
+})
+
+-- Switch do Toggle
+local switchAlvo = new("TextButton", {
+    Size = UDim2.fromOffset(44, 24),
+    Position = UDim2.new(1, -60, 0.5, -12),
+    BackgroundColor3 = T.Row,
+    Text = "",
+    AutoButtonColor = false
+}, rowAuto)
+corner(switchAlvo, "pill"); stroke(switchAlvo, T.Stroke, 1.5)
+
+local knobAlvo = new("Frame", {
+    Size = UDim2.fromOffset(18, 18),
+    Position = UDim2.fromOffset(3, 3),
+    BackgroundColor3 = T.Sub
+}, switchAlvo)
+corner(knobAlvo, "pill")
+
+local toggledAlvo = false
+switchAlvo.MouseButton1Click:Connect(function()
+    toggledAlvo = not toggledAlvo
+    if toggledAlvo then
+        tween(switchAlvo, 0.2, {BackgroundColor3 = T.G1})
+        tween(switchAlvo.UIStroke, 0.2, {Color = T.G1})
+        tween(knobAlvo, 0.2, {Position = UDim2.fromOffset(23, 3), BackgroundColor3 = Color3.new(1,1,1)}, BACK)
+        toast({Title = "AUTO-SNIPER", Body = "SISTEMA ONLINE", Icon = "✓", Color = T.G1})
+    else
+        tween(switchAlvo, 0.2, {BackgroundColor3 = T.Row})
+        tween(switchAlvo.UIStroke, 0.2, {Color = T.Stroke})
+        tween(knobAlvo, 0.2, {Position = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Sub}, BACK)
+        toast({Title = "AUTO-SNIPER", Body = "SISTEMA OFFLINE", Icon = "✕", Color = T.Red})
+    end
+end)
+-- ===============================================================
 local statusStates = { Stamina = false, Hunger = false, Thirst = false }
 
 task.spawn(function()
