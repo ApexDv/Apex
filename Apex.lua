@@ -63,8 +63,6 @@ local function draggable(handle,target)
 		end
 	end)
 end
-local ord=setmetatable({},{__index=function() return 0 end})
-local function nxt(parent) ord[parent]=ord[parent]+1; return ord[parent] end
 local spinners={}
 local function spin(g,speed) spinners[#spinners+1]={g,speed}; return g end
 local particleList={}
@@ -87,7 +85,6 @@ local function particles(parent,n)
 	end
 end
 
--- ÍCONES DAS ABAS
 local function chev(parent,tx,ty,dir,col,L,th)
 	L=L or 8; th=th or 2.5; local d=L/2*0.7071; local bars={}
 	local function bar(cx,cy,rot)
@@ -140,16 +137,6 @@ local function iconLag(ic)
 	local x2=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x2,"pill")
 	return function(c) for _,ch in ipairs(ic:GetChildren()) do if ch:IsA("Frame") then ch.BackgroundColor3=c end end end
 end
-local function iconHeart(ic)
-	local left = new("Frame", {Size=UDim2.fromOffset(11, 15), Position = UDim2.fromOffset(7, 8), Rotation = -45, BackgroundColor3 = T.Sub, BorderSizePixel = 0}, ic)
-	corner(left, "pill")
-	local right = new("Frame", {Size=UDim2.fromOffset(11, 15), Position = UDim2.fromOffset(18, 8), Rotation = 45, BackgroundColor3 = T.Sub, BorderSizePixel = 0}, ic)
-	corner(right, "pill")
-	return function(c)
-		left.BackgroundColor3 = c
-		right.BackgroundColor3 = c
-	end
-end
 
 local parentGui=(gethui and gethui()) or CoreGui
 local old=parentGui:FindFirstChild("APEXHub"); if old then old:Destroy() end
@@ -176,101 +163,95 @@ task.spawn(function()
 	pcall(function() fabAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end)
 end)
 
-local toastLayer=new("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,60),
-	Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,ZIndex=70},gui)
-new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder,
-	HorizontalAlignment=Enum.HorizontalAlignment.Right},toastLayer)
+local notifyGui = new("ScreenGui", {Name = "APEXNotify",ResetOnSpawn = false,DisplayOrder = 200,ZIndexBehavior = Enum.ZIndexBehavior.Sibling,IgnoreGuiInset = true}, parentGui)
+local notifyLayer = new("Frame", {AnchorPoint = Vector2.new(1, 0),Position = UDim2.new(1, -12, 0, 60),Size = UDim2.fromOffset(320, 0),AutomaticSize = Enum.AutomaticSize.Y,BackgroundTransparency = 1}, notifyGui)
+new("UIListLayout", {Padding = UDim.new(0, 10),SortOrder = Enum.SortOrder.LayoutOrder,HorizontalAlignment = Enum.HorizontalAlignment.Right}, notifyLayer)
 
-local toastCount=0
-local ICONS={success="✓",info="i",warn="!",error="✕"}
+local notifyCount = 0
+local NOTIFY_TYPES = {info = { Color = T.G1, Icon = "i" },success = { Color = Color3.fromRGB(70, 210, 150), Icon = "✓" },warn = { Color = T.Orange, Icon = "!" },error = { Color = T.Red, Icon = "✕" },}
 
-local function toast(opts)
-	toastCount+=1
-	local dur    = opts.Duration or 5
-	local col    = opts.Color    or T.G1
-	local title  = opts.Title    or ""
-	local body   = opts.Body     or ""
-	local icon   = opts.Icon     or "i"
-	local lo     = toastCount
+local function Notify(opts)
+	opts = opts or {}
+	local kind  = NOTIFY_TYPES[opts.Type or "info"] or NOTIFY_TYPES.info
+	local col   = opts.Color or kind.Color
+	local icon  = opts.Icon or kind.Icon
+	local title = opts.Title or "APEX HUB"
+	local body  = opts.Body or opts.Text or ""
+	local dur   = opts.Duration or 5
 
-	local holder=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
-		BackgroundTransparency=1,LayoutOrder=lo},toastLayer)
-	local card=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
-		BackgroundColor3=Color3.fromRGB(10,16,12),Position=UDim2.fromOffset(330,0),
-		ClipsDescendants=false},holder)
-	corner(card,16)
-	stroke(card,col,1.5,0.15)
+	notifyCount += 1
+	local holder = new("Frame", {Size = UDim2.fromOffset(320, 66),BackgroundTransparency = 1,LayoutOrder = notifyCount}, notifyLayer)
+	local glow = new("Frame", {AnchorPoint = Vector2.new(0.5, 0.5),Position = UDim2.new(0.5, 340, 0.5, 0),Size = UDim2.new(1, 18, 1, 18),BackgroundColor3 = col,BackgroundTransparency = 0.9,BorderSizePixel = 0}, holder)
+	corner(glow, "pill"); loop(glow, 1.4, { BackgroundTransparency = 0.96 })
 
-	local gloss=new("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=Color3.new(1,1,1),
-		BackgroundTransparency=0.94},card)
-	corner(gloss,16)
+	local card = new("Frame", {Size = UDim2.fromScale(1, 1),Position = UDim2.fromOffset(340, 0),BackgroundColor3 = Color3.new(1, 1, 1),BorderSizePixel = 0}, holder)
+	corner(card, "pill"); new("UIGradient", { Color = ColorSequence.new(T.Card, T.Bg), Rotation = 60 }, card)
+	local st = new("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, card)
+	local stGrad = new("UIGradient", {Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, col), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(8, 35, 75)), ColorSequenceKeypoint.new(1, T.G2) }),Rotation = 30}, st)
 
-	local bar=new("Frame",{Size=UDim2.new(0,3,1,-20),Position=UDim2.fromOffset(10,10),
-		BackgroundColor3=col,BorderSizePixel=0},card)
-	corner(bar,"pill")
+	local ic = new("Frame", {AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0), Size = UDim2.fromOffset(42, 42), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, card)
+	corner(ic, "pill")
+	local icGrad = new("UIGradient", { Color = ColorSequence.new(col, T.G2), Rotation = 45 }, ic)
+	local icSc = new("UIScale", { Scale = 0 }, ic)
+	new("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = icon, Font = Enum.Font.GothamBlack, TextSize = 20, TextColor3 = T.Bg }, ic)
 
-	local iconCircle=new("Frame",{Size=UDim2.fromOffset(32,32),Position=UDim2.fromOffset(20,10),
-		BackgroundColor3=col:Lerp(Color3.new(0,0,0),0.6)},card)
-	corner(iconCircle,"pill")
-	stroke(iconCircle,col,1.5,0.3)
-	new("TextLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
-		Text=icon,Font=F.GothamBlack,TextSize=14,TextColor3=col,
-		TextXAlignment=CENTER,TextYAlignment=Enum.TextYAlignment.Center},iconCircle)
+	new("TextLabel", { Position = UDim2.fromOffset(66, 13), Size = UDim2.new(1, -86, 0, 18), BackgroundTransparency = 1, Text = title, Font = Enum.Font.GothamBlack, TextSize = 13, TextColor3 = T.Text, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd }, card)
+	new("TextLabel", { Position = UDim2.fromOffset(66, 31), Size = UDim2.new(1, -86, 0, 15), BackgroundTransparency = 1, Text = body, Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = T.Sub, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd }, card)
 
-	new("TextLabel",{Size=UDim2.new(1,-80,0,18),Position=UDim2.fromOffset(60,10),
-		BackgroundTransparency=1,Text=title,Font=F.GothamBlack,TextSize=12,
-		TextColor3=T.Text,TextTruncate=Enum.TextTruncate.AtEnd,TextXAlignment=LEFT},card)
+	local track = new("Frame", { Position = UDim2.new(0, 66, 1, -12), Size = UDim2.new(1, -96, 0, 3), BackgroundColor3 = T.Row, BorderSizePixel = 0 }, card)
+	corner(track, "pill")
+	local prog = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0 }, track)
+	corner(prog, "pill"); new("UIGradient", { Color = ACCENT, Rotation = 0 }, prog)
 
-	if body~="" then
-		new("TextLabel",{Size=UDim2.new(1,-80,0,14),Position=UDim2.fromOffset(60,30),
-			BackgroundTransparency=1,Text=body,Font=F.GothamBold,TextSize=10,
-			TextColor3=T.Sub,TextTruncate=Enum.TextTruncate.AtEnd,TextXAlignment=LEFT},card)
-	end
+	local btn = new("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 10 }, card)
+	local cardSc = new("UIScale", { Scale = 1 }, card)
+	btn.MouseEnter:Connect(function() tween(cardSc, 0.14, { Scale = 1.03 }) end)
+	btn.MouseLeave:Connect(function() tween(cardSc, 0.14, { Scale = 1 }) end)
+	btn.MouseButton1Down:Connect(function() tween(cardSc, 0.08, { Scale = 0.95 }) end)
 
-	new("Frame",{Size=UDim2.new(1,0,0,8),BackgroundTransparency=1,LayoutOrder=99},card)
-	local progTrack=new("Frame",{Size=UDim2.new(1,-24,0,2),Position=UDim2.new(0,12,1,-6),
-		BackgroundColor3=Color3.fromRGB(30,42,34),BorderSizePixel=0},card)
-	corner(progTrack,"pill")
-	local prog=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=col,BorderSizePixel=0},progTrack)
-	corner(prog,"pill")
-	gradient(prog,ACCENT,0)
-	tween(prog,dur,{Size=UDim2.fromScale(0,1)},Enum.EasingStyle.Linear)
-	tween(card,0.4,{Position=UDim2.fromOffset(0,0)},BACK)
-
-	task.delay(dur,function()
-		if not holder.Parent then return end
-		tween(card,0.3,{Position=UDim2.fromOffset(330,0)},Enum.EasingStyle.Quad,Enum.EasingDirection.In)
-		task.wait(0.35); holder:Destroy()
+	local conn
+	conn = RunService.RenderStepped:Connect(function(dt)
+		if not holder.Parent then conn:Disconnect() return end
+		stGrad.Rotation = (stGrad.Rotation + 70 * dt) % 360
+		icGrad.Rotation = (icGrad.Rotation + 90 * dt) % 360
 	end)
+
+	tween(card, 0.5, { Position = UDim2.fromOffset(0, 0) }, BACK)
+	tween(glow, 0.5, { Position = UDim2.new(0.5, 0, 0.5, 0) }, BACK)
+	task.delay(0.2, function() tween(icSc, 0.45, { Scale = 1 }, BACK) end)
+	tween(prog, dur, { Size = UDim2.fromScale(0, 1) }, Enum.EasingStyle.Linear)
+
+	local closed = false
+	local function close()
+		if closed then return end
+		closed = true
+		tween(card, 0.3, { Position = UDim2.fromOffset(340, 0) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		tween(glow, 0.3, { Position = UDim2.new(0.5, 340, 0.5, 0) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		task.wait(0.32); tween(holder, 0.2, { Size = UDim2.fromOffset(320, 0) }); task.wait(0.22); holder:Destroy()
+	end
+	btn.Activated:Connect(close); task.delay(dur, close)
+	return { Close = close }
 end
 
 local W,H=680,390
-local root=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),
-	Size=UDim2.fromOffset(W,H),BackgroundTransparency=1,Visible=false},gui)
+local root=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(W,H),BackgroundTransparency=1,Visible=false},gui)
 local rootSc=new("UIScale",{Scale=0},root)
 local function fitScale()
 	local cam=workspace.CurrentCamera; if not cam then return 1 end
 	local vp=cam.ViewportSize
 	return math.clamp(math.min((vp.X-24)/W,(vp.Y-24)/H),0.4,1)
 end
-local glow=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),
-	Size=UDim2.new(1,28,1,28),BackgroundColor3=T.G2,BackgroundTransparency=0.9,BorderSizePixel=0},root)
+local glow=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,28,1,28),BackgroundColor3=T.G2,BackgroundTransparency=0.9,BorderSizePixel=0},root)
 corner(glow,36); loop(glow,1.8,{BackgroundTransparency=0.95})
-local main=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(1,1,1),
-	ClipsDescendants=true,BackgroundTransparency=0.35},root)
-corner(main,24)
-gradient(main,ColorSequence.new(Color3.fromRGB(11,20,15),T.Bg),60)
+local main=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(1,1,1),ClipsDescendants=true,BackgroundTransparency=0.35},root)
+corner(main,24); gradient(main,ColorSequence.new(Color3.fromRGB(11,20,15),T.Bg),60)
 local mainStroke=stroke(main,Color3.new(1,1,1),2,0.1)
-spin(gradient(mainStroke,ColorSequence.new({
-	ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),
-	ColorSequenceKeypoint.new(1,T.G2),}),30),45)
+spin(gradient(mainStroke,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2),}),30),45)
 particles(main,10)
 
-local header=new("Frame",{Size=UDim2.new(1,-20,0,44),Position=UDim2.fromOffset(10,10),
-	BackgroundColor3=T.Rail,BackgroundTransparency=0.3},main)
+local header=new("Frame",{Size=UDim2.new(1,-20,0,44),Position=UDim2.fromOffset(10,10),BackgroundColor3=T.Rail,BackgroundTransparency=0.3},main)
 corner(header,16); stroke(header,T.Stroke,1)
-local logo=new("Frame",{Size=UDim2.fromOffset(30,30),Position=UDim2.fromOffset(8,7),
-	BackgroundColor3=Color3.new(1,1,1)},header)
+local logo=new("Frame",{Size=UDim2.fromOffset(30,30),Position=UDim2.fromOffset(8,7),BackgroundColor3=Color3.new(1,1,1)},header)
 corner(logo,10); spin(gradient(logo,ACCENT,45),80)
 label(header,{Size=UDim2.fromOffset(84,44),Position=UDim2.fromOffset(46,0),Text="APEX HUB",Font=F.GothamBlack,TextSize=14})
 label(header,{Size=UDim2.fromOffset(100,44),Position=UDim2.fromOffset(132,0),Text="/ Survival",TextSize=11,TextColor3=T.Sub})
@@ -303,14 +284,10 @@ local pageSub=label(content,{Size=UDim2.new(1,-12,0,14),Position=UDim2.fromOffse
 local pageHolder=new("Frame",{Size=UDim2.new(1,0,1,-48),Position=UDim2.fromOffset(0,48),BackgroundTransparency=1},content)
 
 local pages,tabs,tabOrder,current={},{},{},nil
-
 local function newPage(name)
-	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
-		ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
-	pages[name]={Scroll=sf}
-	return pages[name]
+	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
+	pages[name]={Scroll=sf}; return pages[name]
 end
-
 local function addTab(name,subtitle,icon)
 	local page=newPage(name); local idx=#tabOrder+1; table.insert(tabOrder,name)
 	local b=new("TextButton",{Size=UDim2.fromOffset(40,40),BackgroundTransparency=1,Text="",AutoButtonColor=false,LayoutOrder=idx},tabHolder)
@@ -326,285 +303,83 @@ local function addTab(name,subtitle,icon)
 	end
 	b.Activated:Connect(tabs[name].Select); return page
 end
-
 loop(statusDot,0.9,{BackgroundTransparency=0.65})
-addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
+addTab("Alvo",       "Infinite Status",         iconTarget)
 addTab("Auto",       "Escolha as raridades alvo", iconAuto)
 addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
 addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
 addTab("Config",     "Ajustes do painel",       iconGear)
--- ===================== CONTEÚDO DA ABA ALVO =====================
+
 local alvoPage = pages["Alvo"].Scroll
 new("UIPadding", {PaddingTop = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, alvoPage)
 new("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, alvoPage)
 
--- Título da seção
-label(alvoPage, {
-    Size = UDim2.new(1, 0, 0, 24),
-    Text = "ALVOS DISPONÍVEIS",
-    Font = F.GothamBlack,
-    TextSize = 14,
-    TextColor3 = T.Sub,
-    TextXAlignment = LEFT
-})
-
--- Função pra criar os botões de seleção (Ovos)
-local function CreateTargetButton(title, desc, price)
-    local btn = new("TextButton", {
-        Size = UDim2.new(1, 0, 0, 52),
-        BackgroundColor3 = T.Card,
-        Text = "",
-        AutoButtonColor = false
-    }, alvoPage)
-    corner(btn, 12); stroke(btn, T.Stroke, 1)
-    juice(btn, 1.02)
-
-    -- Nome do alvo
-    label(btn, {
-        Size = UDim2.new(1, -20, 0, 20),
-        Position = UDim2.fromOffset(16, 10),
-        Text = title,
-        Font = F.GothamBold,
-        TextSize = 14,
-        TextXAlignment = LEFT
-    })
-
-    -- Descrição
-    label(btn, {
-        Size = UDim2.new(1, -20, 0, 14),
-        Position = UDim2.fromOffset(16, 28),
-        Text = desc,
-        Font = F.Gotham,
-        TextSize = 11,
-        TextColor3 = T.Sub,
-        TextXAlignment = LEFT
-    })
-
-    -- Preço / Status
-    label(btn, {
-        Size = UDim2.fromOffset(100, 52),
-        Position = UDim2.new(1, -116, 0, 0),
-        Text = price,
-        Font = F.GothamBlack,
-        TextSize = 13,
-        TextColor3 = T.Gold,
-        TextXAlignment = RIGHT
-    })
-
-    btn.MouseButton1Click:Connect(function()
-        toast({Title = "ALVO DEFINIDO", Body = title, Icon = "✓", Color = T.G1})
-        -- Animação de clique
-        local origColor = btn.BackgroundColor3
-        btn.BackgroundColor3 = T.G2
-        task.wait(0.15)
-        tween(btn, 0.3, {BackgroundColor3 = origColor})
-    end)
-end
-
--- Criando os alvos com nomes agressivos
-CreateTargetButton("OVO MÍTICO", "Raridade máxima, chance de spawn baixa.", "1.5M")
-CreateTargetButton("OVO LENDÁRIO", "Alta chance de pets raros.", "500K")
-CreateTargetButton("OVO ÉPICO", "Farm rápido para iniciantes.", "50K")
-
--- Título da seção 2
-label(alvoPage, {
-    Size = UDim2.new(1, 0, 0, 34),
-    Text = "MODO DE EXECUÇÃO",
-    Font = F.GothamBlack,
-    TextSize = 14,
-    TextColor3 = T.Sub,
-    TextXAlignment = LEFT
-})
-
--- Toggle de Auto-Farm
-local rowAuto = new("Frame", {
-    Size = UDim2.new(1, 0, 0, 54),
-    BackgroundColor3 = T.Card
-}, alvoPage)
-corner(rowAuto, 12); stroke(rowAuto, T.Stroke, 1)
-
-label(rowAuto, {
-    Size = UDim2.new(1, -80, 1, 0),
-    Position = UDim2.fromOffset(16, 0),
-    Text = "AUTO-SNIPER",
-    Font = F.GothamBlack,
-    TextSize = 14
-})
-
-label(rowAuto, {
-    Size = UDim2.new(1, -80, 0, 14),
-    Position = UDim2.fromOffset(16, 32),
-    Text = "Rouba o ovo assim que ele spawnar.",
-    Font = F.Gotham,
-    TextSize = 10,
-    TextColor3 = T.Sub
-})
-
--- Switch do Toggle
-local switchAlvo = new("TextButton", {
-    Size = UDim2.fromOffset(44, 24),
-    Position = UDim2.new(1, -60, 0.5, -12),
-    BackgroundColor3 = T.Row,
-    Text = "",
-    AutoButtonColor = false
-}, rowAuto)
-corner(switchAlvo, "pill"); stroke(switchAlvo, T.Stroke, 1.5)
-
-local knobAlvo = new("Frame", {
-    Size = UDim2.fromOffset(18, 18),
-    Position = UDim2.fromOffset(3, 3),
-    BackgroundColor3 = T.Sub
-}, switchAlvo)
-corner(knobAlvo, "pill")
-
-local toggledAlvo = false
-switchAlvo.MouseButton1Click:Connect(function()
-    toggledAlvo = not toggledAlvo
-    if toggledAlvo then
-        tween(switchAlvo, 0.2, {BackgroundColor3 = T.G1})
-        tween(switchAlvo.UIStroke, 0.2, {Color = T.G1})
-        tween(knobAlvo, 0.2, {Position = UDim2.fromOffset(23, 3), BackgroundColor3 = Color3.new(1,1,1)}, BACK)
-        toast({Title = "AUTO-SNIPER", Body = "SISTEMA ONLINE", Icon = "✓", Color = T.G1})
-    else
-        tween(switchAlvo, 0.2, {BackgroundColor3 = T.Row})
-        tween(switchAlvo.UIStroke, 0.2, {Color = T.Stroke})
-        tween(knobAlvo, 0.2, {Position = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Sub}, BACK)
-        toast({Title = "AUTO-SNIPER", Body = "SISTEMA OFFLINE", Icon = "✕", Color = T.Red})
-    end
-end)
--- ===============================================================
 local statusStates = { Stamina = false, Hunger = false, Thirst = false }
-
 task.spawn(function()
 	RunService.Heartbeat:Connect(function()
 		if not statusStates.Stamina and not statusStates.Hunger and not statusStates.Thirst then return end
 		local char = lp.Character
 		if not char then return end
-		
 		local function ProcessObject(obj)
 			for attrName, attrValue in pairs(obj:GetAttributes()) do
 				if type(attrValue) == "number" then
 					local lowerName = string.lower(attrName)
 					local maxVal = attrValue < 100 and 100 or (attrValue * 2)
-					if statusStates.Stamina and string.find(lowerName, "stamina") then
-						obj:SetAttribute(attrName, maxVal)
-					elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then
-						obj:SetAttribute(attrName, maxVal)
-					elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then
-						obj:SetAttribute(attrName, maxVal)
-					end
+					if statusStates.Stamina and string.find(lowerName, "stamina") then obj:SetAttribute(attrName, maxVal)
+					elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then obj:SetAttribute(attrName, maxVal)
+					elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then obj:SetAttribute(attrName, maxVal) end
 				end
 			end
 			for _, v in ipairs(obj:GetDescendants()) do
 				if v:IsA("NumberValue") or v:IsA("IntValue") then
 					local lowerName = string.lower(v.Name)
-					if statusStates.Stamina and string.find(lowerName, "stamina") then
-						v.Value = 999999
-					elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then
-						v.Value = 999999
-					elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then
-						v.Value = 999999
-					end
+					if statusStates.Stamina and string.find(lowerName, "stamina") then v.Value = 999999
+					elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then v.Value = 999999
+					elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then v.Value = 999999 end
 				end
 			end
 		end
-		
-		ProcessObject(lp)
-		ProcessObject(char)
+		ProcessObject(lp); ProcessObject(char)
 		local backpack = lp:FindFirstChild("Backpack"); if backpack then ProcessObject(backpack) end
 		local playerGui = lp:FindFirstChild("PlayerGui"); if playerGui then ProcessObject(playerGui) end
 	end)
 end)
 
-local function MakeToggleIcon(parent, iconType)
-	local container = new("Frame", {Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 1}, parent)
-	
-	if iconType == "Stamina" then
-		local p1 = new("Frame", {Size = UDim2.fromOffset(6, 14), Position = UDim2.fromOffset(10, 2), Rotation = 25, BackgroundColor3 = T.Gold, BorderSizePixel = 0}, container)
-		corner(p1, 2)
-		local p2 = new("Frame", {Size = UDim2.fromOffset(8, 12), Position = UDim2.fromOffset(6, 8), Rotation = -35, BackgroundColor3 = T.Gold, BorderSizePixel = 0}, container)
-		corner(p2, 2)
-	elseif iconType == "Hunger" then
-		local apple = new("Frame", {Size = UDim2.fromOffset(18, 18), Position = UDim2.fromOffset(3, 4), BackgroundColor3 = T.Red, BorderSizePixel = 0}, container)
-		corner(apple, "pill")
-		local stem = new("Frame", {Size = UDim2.fromOffset(3, 6), Position = UDim2.fromOffset(11, 0), Rotation = 15, BackgroundColor3 = T.Green, BorderSizePixel = 0}, container)
-		corner(stem, 1)
-	elseif iconType == "Thirst" then
-		local drop = new("Frame", {Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(4, 6), BackgroundColor3 = T.Blue, BorderSizePixel = 0}, container)
-		corner(drop, "pill")
-		local tip = new("Frame", {Size = UDim2.fromOffset(11, 11), Position = UDim2.fromOffset(6.5, 1), Rotation = 45, BackgroundColor3 = T.Blue, BorderSizePixel = 0}, container)
-		corner(tip, 2)
-	end
-	return container
-end
+label(alvoPage, {Size = UDim2.new(1, 0, 0, 24), Text = "SURVIVAL STATUS", Font = F.GothamBlack, TextSize = 14, TextColor3 = T.Sub, TextXAlignment = LEFT})
 
-local function CreateToggle(title, iconType, statusKey)
-	local row = new("Frame", {
-		Size = UDim2.new(1, 0, 0, 54),
-		BackgroundColor3 = T.Card,
-		ZIndex = 52
-	}, pages["Survival"].Scroll)
+local function CreateToggle(title, statusKey)
+	local row = new("Frame", {Size = UDim2.new(1, 0, 0, 54), BackgroundColor3 = T.Card}, alvoPage)
 	corner(row, 12); stroke(row, T.Stroke, 1)
-	
-	MakeToggleIcon(row, iconType).Position = UDim2.fromOffset(16, 15)
-	
-	label(row, {
-		Size = UDim2.new(1, -120, 1, 0),
-		Position = UDim2.fromOffset(52, 0),
-		Text = title,
-		Font = F.GothamBold,
-		TextSize = 14,
-		ZIndex = 52
-	})
-	
-	local switchBg = new("TextButton", {
-		Size = UDim2.fromOffset(44, 24),
-		Position = UDim2.new(1, -60, 0.5, -12),
-		BackgroundColor3 = T.Row,
-		Text = "",
-		ZIndex = 53,
-		AutoButtonColor = false
-	}, row)
-	corner(switchBg, "pill")
-	stroke(switchBg, T.Stroke, 1.5)
-	
-	local knob = new("Frame", {
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.fromOffset(3, 3),
-		BackgroundColor3 = T.Sub,
-		ZIndex = 54
-	}, switchBg)
+	label(row, {Size = UDim2.new(1, -80, 1, 0), Position = UDim2.fromOffset(16, 0), Text = title, Font = F.GothamBold, TextSize = 14})
+	local switchBg = new("TextButton", {Size = UDim2.fromOffset(44, 24), Position = UDim2.new(1, -60, 0.5, -12), BackgroundColor3 = T.Row, Text = "", AutoButtonColor = false}, row)
+	corner(switchBg, "pill"); stroke(switchBg, T.Stroke, 1.5)
+	local knob = new("Frame", {Size = UDim2.fromOffset(18, 18), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Sub}, switchBg)
 	corner(knob, "pill")
-	
 	local toggled = false
 	switchBg.MouseButton1Click:Connect(function()
 		toggled = not toggled
 		statusStates[statusKey] = toggled
-		
 		if toggled then
-			tween(switchBg, 0.2, {BackgroundColor3 = T.G1})
-			tween(switchBg.UIStroke, 0.2, {Color = T.G1})
+			tween(switchBg, 0.2, {BackgroundColor3 = T.G1}); tween(switchBg.UIStroke, 0.2, {Color = T.G1})
 			tween(knob, 0.2, {Position = UDim2.fromOffset(23, 3), BackgroundColor3 = Color3.new(1,1,1)}, BACK)
-			toast({Title = title, Body = "Activated", Icon = "✓", Color = T.G1})
+			Notify({Title = title, Body = "ACTIVATED", Type = "success", Duration = 3})
 		else
-			tween(switchBg, 0.2, {BackgroundColor3 = T.Row})
-			tween(switchBg.UIStroke, 0.2, {Color = T.Stroke})
+			tween(switchBg, 0.2, {BackgroundColor3 = T.Row}); tween(switchBg.UIStroke, 0.2, {Color = T.Stroke})
 			tween(knob, 0.2, {Position = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Sub}, BACK)
-			toast({Title = title, Body = "Deactivated", Icon = "✕", Color = T.Red})
+			Notify({Title = title, Body = "DEACTIVATED", Type = "error", Duration = 3})
 		end
 	end)
 end
 
-CreateToggle("Infinite Stamina", "Stamina", "Stamina")
-CreateToggle("Infinite Hunger", "Hunger", "Hunger")
-CreateToggle("Infinite Thirst", "Thirst", "Thirst")
+CreateToggle("INFINITE STAMINA", "Stamina")
+CreateToggle("INFINITE HUNGER", "Hunger")
+CreateToggle("INFINITE THIRST", "Thirst")
 
 local open=false
 local function setOpen(v)
 	open=v
 	if v then
-		root.Visible=true; rootSc.Scale=0
-		tween(rootSc,0.55,{Scale=fitScale()},BACK)
+		root.Visible=true; rootSc.Scale=0; tween(rootSc,0.55,{Scale=fitScale()},BACK)
 		for i,n in ipairs(tabOrder) do
 			local b=tabs[n].Btn; local sc=b:FindFirstChildOfClass("UIScale")
 			if sc then sc.Scale=0; task.delay(0.2+(i-1)*0.07,function() tween(sc,0.4,{Scale=1},BACK) end) end
@@ -623,7 +398,7 @@ fab.InputEnded:Connect(function()
 end)
 minBtn.Activated:Connect(function() setOpen(false) end)
 draggable(header,root)
-tabs["Survival"].Select()
+tabs["Alvo"].Select()
 
 local function runIntro()
 	fab.Visible=false
@@ -640,24 +415,13 @@ local function runIntro()
 	end
 	local line=new("Frame",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,80),Size=UDim2.fromOffset(0,3),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0,ZIndex=151},box)
 	corner(line,"pill"); gradient(line,ACCENT,0)
-	local best=new("TextLabel",{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,94),BackgroundTransparency=1,
-				Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
+	local best=new("TextLabel",{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,94),BackgroundTransparency=1,Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
 	local bestSc=new("UIScale",{Scale=0.6},best)
-	
 	task.spawn(function()
-		for i,p in ipairs(parts) do
-			task.delay((i-1)*0.2,function()
-				tween(p[1],0.5,{TextTransparency=0})
-				TweenService:Create(p[2],TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
-			end)
-		end
-		task.wait(1.2)
-		tween(line,0.8,{Size=UDim2.fromOffset(300,3)})
-		tween(best,0.8,{TextTransparency=0})
+		for i,p in ipairs(parts) do task.delay((i-1)*0.2,function() tween(p[1],0.5,{TextTransparency=0}); TweenService:Create(p[2],TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play() end) end
+		task.wait(1.2); tween(line,0.8,{Size=UDim2.fromOffset(300,3)}); tween(best,0.8,{TextTransparency=0})
 		TweenService:Create(bestSc,TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
-		
 		task.wait(2.0)
-		
 		for _,p in ipairs(parts) do tween(p[1],0.6,{TextTransparency=1}) end
 		tween(best,0.6,{TextTransparency=1}); tween(line,0.6,{Size=UDim2.fromOffset(0,3)})
 		task.wait(0.5); tween(splash,0.6,{BackgroundTransparency=1}); sg.Enabled=false
@@ -676,26 +440,20 @@ local function runGate()
 	local bs=stroke(box,Color3.new(1,1,1),2,0.05)
 	spin(gradient(bs,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2)}),30),70)
 	local boxSc=new("UIScale",{Scale=0},box); tween(boxSc,0.6,{Scale=math.min(1,fitScale()+0.15)},BACK)
-	
 	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
-	
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
-	
 	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
 	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
-	
 	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
 	local inStroke=stroke(inWrap,T.Stroke,1.5)
 	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
-	
 	do
 		local sh=new("Frame",{Size=UDim2.fromOffset(10,12),Position=UDim2.fromOffset(19,9),BackgroundTransparency=1},inWrap)
 		corner(sh,"pill"); new("UIStroke",{Color=T.G1,Thickness=2,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},sh)
 		local bd=new("Frame",{Size=UDim2.fromOffset(16,12),Position=UDim2.fromOffset(16,20),BackgroundColor3=T.G1,BorderSizePixel=0},inWrap); corner(bd,4)
 	end
-
 	local function successAnim(cb)
 		local flash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.G1,BackgroundTransparency=1,ZIndex=170},box)
 		corner(flash,26); tween(flash,0.15,{BackgroundTransparency=0.3}); task.wait(0.1); tween(flash,0.3,{BackgroundTransparency=1})
@@ -711,9 +469,7 @@ local function runGate()
 			end)
 		end
 		for _=1,20 do
-			local px=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,math.random(-10,10),0.5,math.random(-10,10)),
-				Size=UDim2.fromOffset(math.random(5,12),math.random(5,12)),
-				BackgroundColor3=math.random()>0.5 and T.G1 or T.G2,BorderSizePixel=0,ZIndex=174},gate)
+			local px=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,math.random(-10,10),0.5,math.random(-10,10)),Size=UDim2.fromOffset(math.random(5,12),math.random(5,12)),BackgroundColor3=math.random()>0.5 and T.G1 or T.G2,BorderSizePixel=0,ZIndex=174},gate)
 			corner(px,"pill")
 			tween(px,0.7,{Position=UDim2.new(0.5,math.random(-200,200),0.5,math.random(-200,200)),BackgroundTransparency=1,Size=UDim2.fromOffset(math.random(2,5),math.random(2,5))},Enum.EasingStyle.Quad,Enum.EasingDirection.Out)
 			task.delay(0.7,function() pcall(function() px:Destroy() end) end)
@@ -723,9 +479,7 @@ local function runGate()
 		tween(boxSc,0.4,{Scale=0},BACK,Enum.EasingDirection.In)
 		tween(gate,0.4,{BackgroundTransparency=1}); task.wait(0.45); gate:Destroy(); cb()
 	end
-
 	local verificado = false
-
 	local function checkKey()
 		if verificado then return end
 		if (input.Text:gsub("%s+","")):lower() == KEY then
@@ -735,19 +489,11 @@ local function runGate()
 			successAnim(function() runIntro() end)
 		end
 	end
-
-	input:GetPropertyChangedSignal("Text"):Connect(function()
-		if (input.Text:gsub("%s+","")):lower() == KEY then
-			checkKey()
-		end
-	end)
-
+	input:GetPropertyChangedSignal("Text"):Connect(function() if (input.Text:gsub("%s+","")):lower() == KEY then checkKey() end end)
 	input.FocusLost:Connect(function(enter)
 		tween(inStroke,0.2,{Color=T.Stroke})
 		if enter and not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY and input.Text ~= "" then
-			tween(inStroke,0.15,{Color=T.Red})
-			task.wait(1)
-			tween(inStroke,0.3,{Color=T.Stroke})
+			tween(inStroke,0.15,{Color=T.Red}); task.wait(1); tween(inStroke,0.3,{Color=T.Stroke})
 		end
 	end)
 end
