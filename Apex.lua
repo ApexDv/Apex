@@ -3,6 +3,8 @@ local UIS             = game:GetService("UserInputService")
 local TweenService    = game:GetService("TweenService")
 local RunService      = game:GetService("RunService")
 local CoreGui         = game:GetService("CoreGui")
+local Workspace       = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local KEY = "apex"
 local lp  = Players.LocalPlayer
@@ -87,7 +89,13 @@ local function particles(parent,n)
 	end
 end
 
--- ÍCONES DO GUI ANTIGO
+local function primary(parent,props)
+	local b=new("TextButton",props,parent)
+	b.BackgroundColor3=Color3.new(1,1,1); b.AutoButtonColor=false
+	corner(b,"pill"); spin(gradient(b,ACCENT,20),40); juice(b,1.04)
+	return b
+end
+
 local function chev(parent,tx,ty,dir,col,L,th)
 	L=L or 8; th=th or 2.5; local d=L/2*0.7071; local bars={}
 	local function bar(cx,cy,rot)
@@ -140,6 +148,83 @@ local function iconLag(ic)
 	local x2=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x2,"pill")
 	return function(c) for _,ch in ipairs(ic:GetChildren()) do if ch:IsA("Frame") then ch.BackgroundColor3=c end end end
 end
+
+-- Componentes do Menu (Cards, Botões, Toggles)
+local function newPage(name)
+	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
+		ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
+	local cols=new("Frame",{Size=UDim2.new(1,-8,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1},sf)
+	new("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder},cols)
+	local function col(i)
+		local c=new("Frame",{Size=UDim2.new(0.5,-5,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,LayoutOrder=i},cols)
+		new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder},c)
+		return c
+	end
+	pages[name]={Scroll=sf,Left=col(1),Right=col(2),Rows={},Cards={}}
+	return pages[name]
+end
+
+local function card(page,side,title)
+	local col=page[side]
+	local c=new("Frame",{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundColor3=T.Card,LayoutOrder=nxt(col),BackgroundTransparency=0.4},col)
+	corner(c,18); stroke(c,T.Stroke,1)
+	new("UIScale",{Name="Pop"},c); new("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder},c)
+	new("UIPadding",{PaddingBottom=UDim.new(0,8)},c); page.Cards[#page.Cards+1]=c
+	local h=new("Frame",{Size=UDim2.new(1,0,0,36),BackgroundTransparency=1,LayoutOrder=0},c)
+	local dot=new("Frame",{Size=UDim2.fromOffset(8,8),Position=UDim2.fromOffset(16,14),BackgroundColor3=T.G1,BorderSizePixel=0},h); corner(dot,"pill"); loop(dot,1.4,{BackgroundTransparency=0.6})
+	local hl=label(h,{Size=UDim2.new(1,-44,1,0),Position=UDim2.fromOffset(32,0),Text=title:upper(),Font=F.GothamBold,TextSize=11})
+	return c,hl
+end
+
+local function row(c,page,name,height)
+	local r=new("Frame",{Name=name,Size=UDim2.new(1,0,0,height or 40),BackgroundTransparency=1,LayoutOrder=nxt(c)},c)
+	local ln=new("Frame",{Size=UDim2.new(1,-28,0,2),Position=UDim2.fromOffset(14,0),BackgroundColor3=T.Stroke,BorderSizePixel=0},r); corner(ln,"pill")
+	local l=label(r,{Size=UDim2.new(1,-130,1,0),Position=UDim2.fromOffset(16,0),Text=name,TextTruncate=Enum.TextTruncate.AtEnd})
+	page.Rows[#page.Rows+1]=r; return r,l
+end
+
+local function addToggle(c,page,text,default,cb)
+	local r=row(c,page,text)
+	local track=new("TextButton",{Size=UDim2.fromOffset(44,24),Position=UDim2.new(1,-58,0.5,-12),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},r)
+	corner(track,"pill"); local ts=stroke(track,T.Stroke,1)
+	local knob=new("Frame",{Size=UDim2.fromOffset(18,18),Position=UDim2.fromOffset(3,3),BackgroundColor3=T.Sub,BorderSizePixel=0},track); corner(knob,"pill")
+	local on=false
+	local function set(v,silent)
+		on=v; tween(track,0.2,{BackgroundColor3=v and T.G2 or T.Row}); tween(ts,0.2,{Color=v and T.G1 or T.Stroke})
+		tween(knob,0.28,{Position=v and UDim2.fromOffset(23,3) or UDim2.fromOffset(3,3),BackgroundColor3=v and Color3.new(1,1,1) or T.Sub},BACK)
+		if not silent then task.spawn(cb,v) end
+	end
+	track.Activated:Connect(function() set(not on) end)
+	if default then set(true,true) end
+	return set
+end
+
+local function addButton(c,page,text,cb)
+	local r=row(c,page,text,52); r:FindFirstChildOfClass("TextLabel"):Destroy()
+	local b=primary(r,{Size=UDim2.new(1,-24,0,36),Position=UDim2.fromOffset(12,9),Text=text,Font=F.GothamBlack,TextSize=12,TextColor3=T.Bg})
+	b.Activated:Connect(function() task.spawn(cb) end); return b
+end
+
+local function addSlider(c,page,text,min,max,default,cb)
+	local r,l=row(c,page,text,56); l.Size=UDim2.new(1,-80,0,32)
+	local val=label(r,{Size=UDim2.fromOffset(56,32),Position=UDim2.new(1,-72,0,0),Text=tostring(default),Font=F.GothamBold,TextColor3=T.G1,TextXAlignment=RIGHT})
+	local bar=new("TextButton",{Size=UDim2.new(1,-32,0,10),Position=UDim2.new(0,16,0,38),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},r); corner(bar,"pill")
+	local fill=new("Frame",{Size=UDim2.fromScale((default-min)/(max-min),1),BackgroundColor3=Color3.new(1,1,1)},bar)
+	corner(fill,"pill"); gradient(fill,ACCENT,0)
+	local knob=new("Frame",{Size=UDim2.fromOffset(18,18),AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(1,0,0.5,0),BackgroundColor3=Color3.new(1,1,1)},fill)
+	corner(knob,"pill"); stroke(knob,T.G2,2); local ks=new("UIScale",{Scale=1},knob)
+	local function setValue(v) v=math.clamp(v,min,max); fill.Size=UDim2.fromScale((v-min)/(max-min),1); val.Text=tostring(v); return v end
+	local dragging=false
+	local function update(x) local a=math.clamp((x-bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1); task.spawn(cb,setValue(math.floor(min+(max-min)*a+0.5))) end
+	bar.InputBegan:Connect(function(i)
+		if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+			dragging=true; update(i.Position.X); tween(ks,0.15,{Scale=1.3},BACK)
+			i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then dragging=false; tween(ks,0.2,{Scale=1},BACK) end end)
+		end
+	end)
+	UIS.InputChanged:Connect(function(i) if dragging and(i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then update(i.Position.X) end end)
+	return function(v,silent) v=setValue(v); if not silent then task.spawn(cb,v) end end
+end
 local parentGui=(gethui and gethui()) or CoreGui
 local old=parentGui:FindFirstChild("APEXHub"); if old then old:Destroy() end
 local gui=new("ScreenGui",{Name="APEXHub",ResetOnSpawn=false,DisplayOrder=100,
@@ -166,79 +251,12 @@ task.spawn(function()
 	pcall(function() fabAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end)
 end)
 
-local toastLayer=new("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,60),
-	Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,ZIndex=70},gui)
-new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder,
-	HorizontalAlignment=Enum.HorizontalAlignment.Right},toastLayer)
-
-local toastCount=0
-local ICONS={success="✓",info="i",warn="!",error="✕"}
-
-local function toast(opts)
-	toastCount+=1
-	local dur    = opts.Duration or 5
-	local col    = opts.Color    or T.G1
-	local title  = opts.Title    or ""
-	local body   = opts.Body     or ""
-	local icon   = opts.Icon     or "i"
-	local lo     = toastCount
-
-	local holder=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
-		BackgroundTransparency=1,LayoutOrder=lo},toastLayer)
-	local card=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
-		BackgroundColor3=Color3.fromRGB(10,16,12),Position=UDim2.fromOffset(330,0),
-		ClipsDescendants=false},holder)
-	corner(card,16)
-	stroke(card,col,1.5,0.15)
-
-	local gloss=new("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=Color3.new(1,1,1),
-		BackgroundTransparency=0.94},card)
-	corner(gloss,16)
-
-	local bar=new("Frame",{Size=UDim2.new(0,3,1,-20),Position=UDim2.fromOffset(10,10),
-		BackgroundColor3=col,BorderSizePixel=0},card)
-	corner(bar,"pill")
-
-	local iconCircle=new("Frame",{Size=UDim2.fromOffset(32,32),Position=UDim2.fromOffset(20,10),
-		BackgroundColor3=col:Lerp(Color3.new(0,0,0),0.6)},card)
-	corner(iconCircle,"pill")
-	stroke(iconCircle,col,1.5,0.3)
-	new("TextLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
-		Text=icon,Font=F.GothamBlack,TextSize=14,TextColor3=col,
-		TextXAlignment=CENTER,TextYAlignment=Enum.TextYAlignment.Center},iconCircle)
-
-	new("TextLabel",{Size=UDim2.new(1,-80,0,18),Position=UDim2.fromOffset(60,10),
-		BackgroundTransparency=1,Text=title,Font=F.GothamBlack,TextSize=12,
-		TextColor3=T.Text,TextTruncate=Enum.TextTruncate.AtEnd,TextXAlignment=LEFT},card)
-
-	if body~="" then
-		new("TextLabel",{Size=UDim2.new(1,-80,0,14),Position=UDim2.fromOffset(60,30),
-			BackgroundTransparency=1,Text=body,Font=F.GothamBold,TextSize=10,
-			TextColor3=T.Sub,TextTruncate=Enum.TextTruncate.AtEnd,TextXAlignment=LEFT},card)
-	end
-
-	new("Frame",{Size=UDim2.new(1,0,0,8),BackgroundTransparency=1,LayoutOrder=99},card)
-	local progTrack=new("Frame",{Size=UDim2.new(1,-24,0,2),Position=UDim2.new(0,12,1,-6),
-		BackgroundColor3=Color3.fromRGB(30,42,34),BorderSizePixel=0},card)
-	corner(progTrack,"pill")
-	local prog=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=col,BorderSizePixel=0},progTrack)
-	corner(prog,"pill")
-	gradient(prog,ACCENT,0)
-	tween(prog,dur,{Size=UDim2.fromScale(0,1)},Enum.EasingStyle.Linear)
-	tween(card,0.4,{Position=UDim2.fromOffset(0,0)},BACK)
-
-	task.delay(dur,function()
-		if not holder.Parent then return end
-		tween(card,0.3,{Position=UDim2.fromOffset(330,0)},Enum.EasingStyle.Quad,Enum.EasingDirection.In)
-		task.wait(0.35); holder:Destroy()
-	end)
-end
 local W,H=680,390
 local root=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),
 	Size=UDim2.fromOffset(W,H),BackgroundTransparency=1,Visible=false},gui)
 local rootSc=new("UIScale",{Scale=0},root)
 local function fitScale()
-	local cam=workspace.CurrentCamera; if not cam then return 1 end
+	local cam=Workspace.CurrentCamera; if not cam then return 1 end
 	local vp=cam.ViewportSize
 	return math.clamp(math.min((vp.X-24)/W,(vp.Y-24)/H),0.4,1)
 end
@@ -293,13 +311,6 @@ local pageHolder=new("Frame",{Size=UDim2.new(1,0,1,-48),Position=UDim2.fromOffse
 
 local pages,tabs,tabOrder,current={},{},{},nil
 
-local function newPage(name)
-	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
-		ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
-	pages[name]={Scroll=sf}
-	return pages[name]
-end
-
 local function addTab(name,subtitle,icon)
 	local page=newPage(name); local idx=#tabOrder+1; table.insert(tabOrder,name)
 	local b=new("TextButton",{Size=UDim2.fromOffset(40,40),BackgroundTransparency=1,Text="",AutoButtonColor=false,LayoutOrder=idx},tabHolder)
@@ -312,43 +323,226 @@ local function addTab(name,subtitle,icon)
 		current=name; pageTitle.Text=name; pageSub.Text=subtitle
 		pageTitle.TextTransparency=1; pageTitle.Position=UDim2.fromOffset(6,8)
 		tween(pageTitle,0.35,{TextTransparency=0,Position=UDim2.fromOffset(6,0)},BACK)
+		for i,c in ipairs(page.Cards) do
+			local pop=c:FindFirstChild("Pop")
+			if pop then pop.Scale=0.88; task.delay((i-1)*0.07,function() tween(pop,0.45,{Scale=1},BACK) end) end
+		end
 	end
 	b.Activated:Connect(tabs[name].Select); return page
+	local CurrentTween = nil
+local ActiveChams = {}
+local SilentAimConnection = nil
+
+local function EquipTool(toolName)
+    local character = lp.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local tool = lp.Backpack:FindFirstChild(toolName)
+    if humanoid and tool then humanoid:EquipTool(tool) end
 end
 
-loop(statusDot,0.9,{BackgroundTransparency=0.65})
-addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
-addTab("Auto",       "Escolha as raridades alvo", iconAuto)
-addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
-addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
-addTab("Config",     "Ajustes do painel",       iconGear)
-
-local open=false
-local function setOpen(v)
-	open=v
-	if v then
-		root.Visible=true; rootSc.Scale=0
-		tween(rootSc,0.55,{Scale=fitScale()},BACK)
-		for i,n in ipairs(tabOrder) do
-			local b=tabs[n].Btn; local sc=b:FindFirstChildOfClass("UIScale")
-			if sc then sc.Scale=0; task.delay(0.2+(i-1)*0.07,function() tween(sc,0.4,{Scale=1},BACK) end) end
-		end
-	else
-		tween(rootSc,0.25,{Scale=0},BACK,Enum.EasingDirection.In)
-		task.delay(0.27,function() if not open then root.Visible=false end end)
-	end
+local function FindPlayerHolding(toolName)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= lp then
+            if player.Backpack:FindFirstChild(toolName) or (player.Character and player.Character:FindFirstChild(toolName)) then
+                return player.Name
+            end
+        end
+    end
+    return nil
 end
-local fabStart
-fab.InputBegan:Connect(function(i)
-	if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then fabStart=fab.AbsolutePosition end
+
+local function MoveToCFrame(targetCFrame, speed)
+    local character = lp.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    if CurrentTween then CurrentTween:Cancel() end
+    root.AssemblyLinearVelocity = Vector3.zero
+    root.AssemblyAngularVelocity = Vector3.zero
+    local distance = (root.Position - targetCFrame.Position).Magnitude
+    local duration = math.clamp(distance / (speed or 21), 0.15, 5)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.In)
+    CurrentTween = TweenService:Create(root, tweenInfo, { CFrame = targetCFrame })
+    CurrentTween:Play()
+end
+
+local function GetMapContainer(containerType)
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if obj:IsA("Model") and not string.find(string.lower(obj.Name), "lobby") then
+            local coinContainer = obj:FindFirstChild("CoinContainer")
+            local spawns = obj:FindFirstChild("Spawns")
+            if containerType == "CoinContainer" and coinContainer then return coinContainer end
+            if containerType == "Spawns" and spawns then return spawns end
+        end
+    end
+    return nil
+end
+
+-- ============ ABA ALVO (Farm e Teleportes) ============
+local pAlvo=addTab("Alvo","Farm e Teleportes",iconTarget)
+local cA=card(pAlvo,"Left","Auto Farm")
+local isAutoFarm = false
+
+addToggle(cA,pAlvo,"Ativar AutoFarm",false,function(on)
+    isAutoFarm = on
+    task.spawn(function()
+        while isAutoFarm do
+            task.wait()
+            local char = lp.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root then
+                local container = GetMapContainer("CoinContainer")
+                if container then
+                    for _, coin in ipairs(container:GetChildren()) do
+                        if coin.Name == "Coin_Server" and not coin:GetAttribute("Collected") and coin:FindFirstChild("CoinVisual") then
+                            local targetCF = CFrame.new(coin.CoinVisual.Position.X, coin.CoinVisual.Position.Y + 1.5, coin.CoinVisual.Position.Z)
+                            MoveToCFrame(targetCF, 1000)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end)
 end)
-fab.InputEnded:Connect(function()
-	if fabStart and(fab.AbsolutePosition-fabStart).Magnitude<6 then setOpen(not open) end; fabStart=nil
+
+local cB=card(pAlvo,"Right","Teleportes")
+addButton(cB,pAlvo,"Ir para o Mapa",function()
+    local spawns = GetMapContainer("Spawns")
+    if spawns then
+        for _, desc in ipairs(spawns:GetDescendants()) do
+            if desc:IsA("BasePart") then MoveToCFrame(desc.CFrame * CFrame.new(0, 5, 0), 5000); break end
+        end
+    end
 end)
-minBtn.Activated:Connect(function() setOpen(false) end)
-draggable(header,root)
-tabs["Alvo"].Select()
-local function runIntro()
+addButton(cB,pAlvo,"Ir para o Lobby",function()
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if (obj:IsA("Model") or obj:IsA("Folder")) and string.find(string.lower(obj.Name), "lobby") then
+            for _, desc in ipairs(obj:GetDescendants()) do
+                if desc:IsA("SpawnLocation") then MoveToCFrame(CFrame.new(desc.Position + Vector3.new(0, 5, 0)), 5000); return end
+            end
+        end
+    end
+end)
+
+-- ============ ABA AUTO (Assassino e Xerife) ============
+local pAuto=addTab("Auto","Funções de Role",iconAuto)
+local cC=card(pAuto,"Left","Xerife")
+addToggle(cC,pAuto,"Silent Aim (Auto Atirar)",false,function(on)
+    if on then
+        task.spawn(function()
+            while true do
+                task.wait()
+                local char = lp.Character
+                local gun = char and char:FindFirstChild("Gun")
+                local sheriffName = FindPlayerHolding("Gun")
+                if gun and sheriffName == lp.Name and not SilentAimConnection then
+                    SilentAimConnection = gun.Activated:Connect(function()
+                        local murdererName = FindPlayerHolding("Knife")
+                        local murdererPlayer = murdererName and Players:FindFirstChild(murdererName)
+                        local murdererRoot = murdererPlayer and murdererPlayer.Character and murdererPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if murdererRoot and gun:FindFirstChild("Shoot") then
+                            gun.Shoot:FireServer("Shoot", murdererRoot.CFrame)
+                        end
+                    end)
+                elseif not gun and SilentAimConnection then
+                    SilentAimConnection:Disconnect(); SilentAimConnection = nil
+                end
+                if not on and SilentAimConnection then
+                    SilentAimConnection:Disconnect(); SilentAimConnection = nil; break
+                end
+            end
+        end)
+    end
+end)
+
+local cD=card(pAuto,"Right","Assassino")
+addToggle(cD,pAuto,"Kill Aura",false,function(on)
+    task.spawn(function()
+        while on do
+            task.wait()
+            local char = lp.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            local murdererName = FindPlayerHolding("Knife")
+            if root and murdererName == lp.Name then
+                EquipTool("Knife")
+                local knife = char:FindFirstChild("Knife")
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= lp and player.Character then
+                        local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                        if targetRoot and (targetRoot.Position - root.Position).Magnitude <= 15 then
+                            if knife and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("HandleTouched") then
+                                knife.Events.HandleTouched:FireServer(targetRoot)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+-- ============ ABA VELOCIDADE (Player) ============
+local pSpeed=addTab("Velocidade","Ajustes do jogador",iconSpeed)
+local cS=card(pSpeed,"Left","Físico")
+local isSpeed = false
+local speedVal = 16
+addToggle(cS,pSpeed,"Ativar Velocidade",false,function(v) isSpeed = v end)
+addSlider(cS,pSpeed,"WalkSpeed",16,200,16,function(v) speedVal = v end)
+
+task.spawn(function()
+    while true do
+        task.wait()
+        if isSpeed then
+            local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+            if h then h.WalkSpeed = speedVal end
+        end
+    end
+end)
+
+-- ============ ABA ANTI-LAG (Visual) ============
+local pLag=addTab("Anti-Lag","Visuais e Otimização",iconLag)
+local cL=card(pLag,"Left","Chams (ESP)")
+local isChams = false
+
+addToggle(cL,pLag,"Ativar Chams",false,function(on)
+    isChams = on
+    task.spawn(function()
+        while isChams do
+            task.wait()
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= lp and player.Character then
+                    local highlight = player.Character:FindFirstChild("Highlight") or Instance.new("Highlight", player.Character)
+                    if player.Character:FindFirstChild("Knife") or (player.Backpack and player.Backpack:FindFirstChild("Knife")) then
+                        highlight.FillColor = Color3.fromRGB(225, 0, 0)
+                    elseif player.Character:FindFirstChild("Gun") or (player.Backpack and player.Backpack:FindFirstChild("Gun")) then
+                        highlight.FillColor = Color3.fromRGB(0, 0, 225)
+                    else
+                        highlight.FillColor = Color3.fromRGB(76, 215, 134)
+                    end
+                end
+            end
+        end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character then
+                local h = player.Character:FindFirstChild("Highlight")
+                if h then h:Destroy() end
+            end
+        end
+    end)
+end)
+
+addButton(cL,pLag,"Desligar Renderização 3D",function()
+    RunService:Set3dRenderingEnabled(false)
+end)
+addButton(cL,pLag,"Ligar Renderização 3D",function()
+    RunService:Set3dRenderingEnabled(true)
+end)
+
+-- ============ ABA CONFIG ============
+local pCfg=addTab("Config","Ajustes do painel",iconGear)
+local cG=card(pCfg,"Left","Painel")
+addButton(cG,pCfg,"Fechar e remover painel",function() gui:Destroy() end)
+	local function runIntro()
 	fab.Visible=false
 	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
 	local sg=gradient(splash,ColorSequence.new(Color3.fromRGB(0,0,0),Color3.fromRGB(5,18,42)),90)
@@ -368,21 +562,15 @@ local function runIntro()
 	local bestSc=new("UIScale",{Scale=0.6},best)
 	
 	task.spawn(function()
-		-- Animação mais lenta e suave das letras
 		for i,p in ipairs(parts) do
 			task.delay((i-1)*0.2,function()
 				tween(p[1],0.5,{TextTransparency=0})
 				TweenService:Create(p[2],TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
 			end)
 		end
-		task.wait(1.2); 
-		tween(line,0.8,{Size=UDim2.fromOffset(300,3)}); 
-		tween(best,0.8,{TextTransparency=0})
+		task.wait(1.2); tween(line,0.8,{Size=UDim2.fromOffset(300,3)}); tween(best,0.8,{TextTransparency=0})
 		TweenService:Create(bestSc,TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
-		
-		task.wait(2.0) -- Tempo maior na tela
-		
-		-- Some suavemente
+		task.wait(2.0)
 		for _,p in ipairs(parts) do tween(p[1],0.6,{TextTransparency=1}) end
 		tween(best,0.6,{TextTransparency=1}); tween(line,0.6,{Size=UDim2.fromOffset(0,3)})
 		task.wait(0.5); tween(splash,0.6,{BackgroundTransparency=1}); sg.Enabled=false
@@ -404,7 +592,6 @@ local function runGate()
 	
 	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
-	
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
 	
@@ -450,32 +637,45 @@ local function runGate()
 	end
 
 	local verificado = false
-
 	local function checkKey()
 		if verificado then return end
 		if (input.Text:gsub("%s+","")):lower() == KEY then
 			verificado = true
 			tween(inStroke,0.2,{Color=T.G1})
 			task.wait(0.3)
-			successAnim(function() runIntro() end) -- Vai direto pra animação da 2ª print
+			successAnim(function() runIntro() end)
 		end
 	end
-
 	input:GetPropertyChangedSignal("Text"):Connect(function()
-		if (input.Text:gsub("%s+","")):lower() == KEY then
-			checkKey()
-		end
+		if (input.Text:gsub("%s+","")):lower() == KEY then checkKey() end
 	end)
-
-	input.FocusLost:Connect(function(enter)
-		tween(inStroke,0.2,{Color=T.Stroke})
-		if enter and not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY and input.Text ~= "" then
-			tween(inStroke,0.15,{Color=T.Red})
-			task.wait(1)
-			tween(inStroke,0.3,{Color=T.Stroke})
+	end
+	local open=false
+local function setOpen(v)
+	open=v
+	if v then
+		root.Visible=true; rootSc.Scale=0
+		tween(rootSc,0.55,{Scale=fitScale()},BACK)
+		for i,n in ipairs(tabOrder) do
+			local b=tabs[n].Btn; local sc=b:FindFirstChildOfClass("UIScale")
+			if sc then sc.Scale=0; task.delay(0.2+(i-1)*0.07,function() tween(sc,0.4,{Scale=1},BACK) end) end
 		end
-	end)
+	else
+		tween(rootSc,0.25,{Scale=0},BACK,Enum.EasingDirection.In)
+		task.delay(0.27,function() if not open then root.Visible=false end end)
+	end
 end
+local fabStart
+fab.InputBegan:Connect(function(i)
+	if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then fabStart=fab.AbsolutePosition end
+end)
+fab.InputEnded:Connect(function()
+	if fabStart and(fab.AbsolutePosition-fabStart).Magnitude<6 then setOpen(not open) end; fabStart=nil
+end)
+minBtn.Activated:Connect(function() setOpen(false) end)
+draggable(header,root)
+tabs["Alvo"].Select()
 
+-- Inicia o fluxo
 runGate()
-print("APEX HUB carregado!")
+print("APEX HUB MM2 carregado!")
