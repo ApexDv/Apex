@@ -68,13 +68,12 @@ local ord=setmetatable({},{__index=function() return 0 end})
 local function nxt(parent) ord[parent]=ord[parent]+1; return ord[parent] end
 local spinners={}
 local function spin(g,speed) spinners[#spinners+1]={g,speed}; return g end
-local particleList={}
 local function particles(parent,n)
-	for _ = 1,n do
+	for _=1,n do
 		local s=math.random(3,7)
 		local p=new("Frame",{Size=UDim2.fromOffset(s,s),Position=UDim2.new(math.random(),0,1.05,0),
 			BackgroundColor3=T.G1,BackgroundTransparency=1,BorderSizePixel=0},parent)
-		corner(p,"pill"); particleList[#particleList+1]=p
+		corner(p,"pill")
 		task.spawn(function()
 			task.wait(math.random()*5)
 			while p.Parent do
@@ -87,36 +86,16 @@ local function particles(parent,n)
 		end)
 	end
 end
---// ========== PARTE 2: ÍCONES ==========
-local function iconTarget(ic)
-	local egg=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(14,18),BackgroundTransparency=1},ic)
-	corner(egg, UDim.new(0.5,0))
-	local rs=new("UIStroke",{Thickness=2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},egg)
-	return function(c) rs.Color=c end
-end
 
+print("[ApexHub] Parte 1 ✔")
+--// ========== PARTE 2: ÍCONES ==========
 local function iconCoin(ic)
 	local coin=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(18,18),BackgroundTransparency=1},ic)
 	corner(coin,"pill")
-	local rs=new("UIStroke",{Thickness=2.5,Color=T.Gold,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},coin) -- CORRIGIDO
+	local rs=new("UIStroke",{Thickness=2.5,Color=T.Gold,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},coin)
 	local inner=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(6,6),BackgroundColor3=T.Gold,BorderSizePixel=0},coin)
 	corner(inner,"pill")
 	return function(c) rs.Color=c; inner.BackgroundColor3=c end
-end
-
-local function iconSpeed(ic)
-	local p1=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,-2,0.5,0),Size=UDim2.fromOffset(4,12),Rotation=30,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(p1,"pill")
-	local p2=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,4,0.5,0),Size=UDim2.fromOffset(4,10),Rotation=30,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(p2,"pill")
-	return function(c) p1.BackgroundColor3=c; p2.BackgroundColor3=c end
-end
-
-local function iconLag(ic)
-	local shield=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(16,16),BackgroundTransparency=1},ic)
-	corner(shield,"pill")
-	local rs=new("UIStroke",{Thickness=2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},shield)
-	local check1=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(10,12),Size=UDim2.fromOffset(6,2),Rotation=45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(check1,"pill")
-	local check2=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(14,9),Size=UDim2.fromOffset(10,2),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(check2,"pill")
-	return function(c) rs.Color=c; check1.BackgroundColor3=c; check2.BackgroundColor3=c end
 end
 
 local function iconGear(ic)
@@ -132,20 +111,51 @@ local function iconGear(ic)
 	return function(c) rs.Color=c; for _,t in ipairs(teeth) do t.BackgroundColor3=c end end
 end
 
-local function iconAuto(ic) -- NOVO: ícone de estrela (raridade)
-	local star=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(16,16),BackgroundTransparency=1},ic)
-	corner(star,"pill")
-	local rs=new("UIStroke",{Thickness=2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},star)
-	local bars={}
-	for i=0,3 do
-		local b=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(2,16),Rotation=i*45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
-		corner(b,"pill"); bars[#bars+1]=b
-	end
-	return function(c) rs.Color=c; for _,b in ipairs(bars) do b.BackgroundColor3=c end end
+print("[ApexHub] Parte 2 ✔")
+--// ========== PARTE 3: GUI + TOAST ==========
+local gui = new("ScreenGui",{
+	Name="ApexHub", ResetOnSpawn=false,
+	ZIndexBehavior=Enum.ZIndexBehavior.Sibling, IgnoreGuiInset=true
+})
+if not pcall(function() gui.Parent = CoreGui end) then
+	gui.Parent = lp:WaitForChild("PlayerGui")
 end
---// ========== PARTE 4: JANELA PRINCIPAL ==========
+gui.DisplayOrder = 999
+
+local toastHolder = new("Frame",{
+	AnchorPoint=Vector2.new(0.5,0), Position=UDim2.new(0.5,0,0,20),
+	Size=UDim2.fromOffset(320,0), BackgroundTransparency=1
+}, gui)
+new("UIListLayout",{Padding=UDim.new(0,8),HorizontalAlignment=Enum.HorizontalAlignment.Center},toastHolder)
+
+local function toast(opts)
+	local box=new("Frame",{Size=UDim2.fromOffset(320,60),BackgroundColor3=T.Card,BorderSizePixel=0},toastHolder)
+	corner(box,12); stroke(box,opts.Color or T.G1,1.5)
+	local acc=new("Frame",{Size=UDim2.fromOffset(4,40),Position=UDim2.fromOffset(10,10),BackgroundColor3=opts.Color or T.G1,BorderSizePixel=0},box)
+	corner(acc,"pill")
+	label(box,{Size=UDim2.new(1,-30,0,18),Position=UDim2.fromOffset(24,8),Text=opts.Title or "Info",Font=F.GothamBold,TextSize=13,TextColor3=opts.Color or T.G1})
+	label(box,{Size=UDim2.new(1,-30,0,28),Position=UDim2.fromOffset(24,26),Text=opts.Body or "",TextSize=11,TextColor3=T.Sub,TextWrapped=true})
+	local sc=new("UIScale",{Scale=0},box)
+	tween(sc,0.35,{Scale=1},BACK)
+	task.delay(opts.Duration or 3,function()
+		tween(sc,0.25,{Scale=0},BACK,Enum.EasingDirection.In)
+		task.wait(0.3); box:Destroy()
+	end)
+end
+
+local function primary(parent,props)
+	local b=new("TextButton",props,parent)
+	b.BackgroundColor3=Color3.new(1,1,1); b.AutoButtonColor=false
+	corner(b,"pill"); spin(gradient(b,ACCENT,20),40); juice(b,1.04)
+	return b
+end
+
+print("[ApexHub] Parte 3 ✔")
+--// ========== PARTE 4: JANELA ==========
 local function fitScale()
-	local vp = workspace.CurrentCamera.ViewportSize
+	local cam = workspace.CurrentCamera
+	if not cam then return 1 end
+	local vp = cam.ViewportSize
 	return math.min(vp.X/1000, vp.Y/650) * 0.95
 end
 
@@ -157,13 +167,10 @@ local root = new("Frame",{
 }, gui)
 rootSc.Parent = root; rootSc.Scale = 1
 corner(root,16); stroke(root,T.Stroke,1.5)
-gradient(new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.97,BorderSizePixel=0},root),
-	ColorSequence.new(T.Bg,Color3.fromRGB(10,20,45)),90)
 
--- Header
 local header = new("Frame",{Size=UDim2.new(1,0,0,54),BackgroundTransparency=1},root)
-label(header,{Size=UDim2.fromOffset(120,28),Position=UDim2.fromOffset(20,13),Text="APEX HUB",Font=F.GothamBlack,TextSize=20,TextColor3=T.Text})
-gradient(header:FindFirstChildWhichIsA("TextLabel"),ACCENT,0)
+local logoLbl = label(header,{Size=UDim2.fromOffset(120,28),Position=UDim2.fromOffset(20,13),Text="APEX HUB",Font=F.GothamBlack,TextSize=20,TextColor3=T.Text})
+gradient(logoLbl,ACCENT,0)
 label(header,{Size=UDim2.fromOffset(200,16),Position=UDim2.fromOffset(20,34),Text="premium • v2.0",TextSize=11,TextColor3=T.Sub})
 
 local statusDot = new("Frame",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-80,0.5,0),Size=UDim2.fromOffset(8,8),BackgroundColor3=T.Green,BorderSizePixel=0},header)
@@ -176,13 +183,10 @@ corner(minBtn,"pill"); juice(minBtn,1.15)
 
 draggable(header,root)
 
--- Rail (menu lateral)
-local rail = new("Frame",{Size=UDim2.fromOffset(170,1),Position=UDim2.new(0,0,0,54),BackgroundTransparency=1},root)
-rail.Size = UDim2.new(0,170,1,-54)
-local railList = new("UIListLayout",{Padding=UDim.new(0,4),HorizontalAlignment=Enum.HorizontalAlignment.Center},rail)
+local rail = new("Frame",{Size=UDim2.new(0,170,1,-54),Position=UDim2.fromOffset(0,54),BackgroundTransparency=1},root)
+new("UIListLayout",{Padding=UDim.new(0,4),HorizontalAlignment=Enum.HorizontalAlignment.Center},rail)
 new("UIPadding",{PaddingTop=UDim.new(0,10)},rail)
 
--- Pages
 local pagesFrame = new("Frame",{Size=UDim2.new(1,-170,1,-54),Position=UDim2.fromOffset(170,54),BackgroundTransparency=1},root)
 local pages = {}
 local tabs = {}
@@ -190,18 +194,13 @@ local tabOrder = {}
 
 local function addTab(name, subtitle, iconFn)
 	local page = new("Frame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Visible=false},pagesFrame)
-	pages[name] = page
 	new("UIPadding",{PaddingLeft=UDim.new(0,14),PaddingRight=UDim.new(0,14),PaddingTop=UDim.new(0,12),PaddingBottom=UDim.new(0,12)},page)
-	local titleLbl = label(page,{Size=UDim2.new(1,0,0,22),Text=name,Font=F.GothamBold,TextSize=16,TextColor3=T.Text})
-	local subLbl = label(page,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,22),Text=subtitle,TextSize=11,TextColor3=T.Sub})
-	local contentY = 46
-	local content = new("Frame",{Size=UDim2.new(1,0,1,-contentY),Position=UDim2.fromOffset(0,contentY),BackgroundTransparency=1},page)
-	new("UIListLayout",{Padding=UDim.new(0,6)},content)
-	page:SetAttribute("Content",nil)
+	label(page,{Size=UDim2.new(1,0,0,22),Text=name,Font=F.GothamBold,TextSize=16,TextColor3=T.Text})
+	label(page,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,22),Text=subtitle,TextSize=11,TextColor3=T.Sub})
+	local content = new("Frame",{Size=UDim2.new(1,0,1,-46),Position=UDim2.fromOffset(0,46),BackgroundTransparency=1},page)
 	pages[name] = page
 	pages[name].Content = content
 
-	-- botão do rail
 	local btn = new("TextButton",{Size=UDim2.new(1,-12,0,40),BackgroundColor3=T.Rail,Text="",AutoButtonColor=false},rail)
 	corner(btn,10); stroke(btn,T.Stroke,1)
 	local ic = new("Frame",{Size=UDim2.fromOffset(20,20),Position=UDim2.fromOffset(12,10),BackgroundTransparency=1},btn)
@@ -224,7 +223,6 @@ local function addTab(name, subtitle, iconFn)
 	return select
 end
 
-local function selectTab(name) tabs[name].Btn:ActivatedFire() end -- fallback
 local function row(parent, page, text, height)
 	height = height or 44
 	local r = new("Frame",{
@@ -246,7 +244,7 @@ local function card(parent, side, title)
 	}, parent)
 	corner(c,12); stroke(c)
 	label(c,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(12,8),Text=title,Font=F.GothamBold,TextSize=13,TextColor3=T.G1})
-	local inner = new("Frame",{Size=UDim2.new(1,-16,1,-42),Position=UDim2.fromOffset(8,38),BackgroundTransparency=1},c)
+	local inner = new("Frame",{Size=UDim2.new(1,-16,1,-46),Position=UDim2.fromOffset(8,42),BackgroundTransparency=1},c)
 	new("UIListLayout",{Padding=UDim.new(0,6)},inner)
 	c.Inner = inner
 	return c
@@ -259,6 +257,8 @@ local function addInfo(c, page, title, val)
 	local v = label(r,{Size=UDim2.new(1,-16,0,18),Position=UDim2.fromOffset(10,20),Text=val,Font=F.GothamBold,TextSize=14,TextColor3=T.Text})
 	return v
 end
+
+print("[ApexHub] Parte 4 ✔")
 --// ========== PARTE 5: CONTROLES ==========
 local function addToggle(c,page,text,default,cb)
 	local r=row(c.Inner,c,text)
@@ -269,7 +269,7 @@ local function addToggle(c,page,text,default,cb)
 	local function set(v,silent)
 		on=v; tween(track,0.2,{BackgroundColor3=v and T.G2 or T.Row}); tween(ts,0.2,{Color=v and T.G1 or T.Stroke})
 		tween(knob,0.28,{Position=v and UDim2.fromOffset(23,3) or UDim2.fromOffset(3,3),BackgroundColor3=v and Color3.new(1,1,1) or T.Sub},BACK)
-		if not silent then task.spawn(cb,v) end
+		if not silent then task.spawn(function() pcall(cb,v) end) end
 	end
 	track.Activated:Connect(function() set(not on) end)
 	if default then set(true,true) end
@@ -277,13 +277,15 @@ local function addToggle(c,page,text,default,cb)
 end
 
 local function addButton(c,page,text,cb)
-	local r=row(c.Inner,c,text,52); r:FindFirstChildOfClass("TextLabel"):Destroy()
+	local r=row(c.Inner,c,text,52)
+	local lbl=r:FindFirstChildOfClass("TextLabel"); if lbl then lbl:Destroy() end
 	local b=primary(r,{Size=UDim2.new(1,-24,0,36),Position=UDim2.fromOffset(12,9),Text=text,Font=F.GothamBlack,TextSize=12,TextColor3=T.Bg})
-	b.Activated:Connect(function() task.spawn(cb) end); return b
+	b.Activated:Connect(function() task.spawn(function() pcall(cb) end) end); return b
 end
 
 local function addSlider(c,page,text,min,max,default,cb)
-	local r,l=row(c.Inner,c,text,56); l.Size=UDim2.new(1,-80,0,32)
+	local r,l=row(c.Inner,c,text,56)
+	if l then l.Size=UDim2.new(1,-80,0,32) end
 	local val=label(r,{Size=UDim2.fromOffset(56,32),Position=UDim2.new(1,-72,0,0),Text=tostring(default),Font=F.GothamBold,TextColor3=T.G1,TextXAlignment=RIGHT})
 	local bar=new("TextButton",{Size=UDim2.new(1,-32,0,10),Position=UDim2.new(0,16,0,38),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},r); corner(bar,"pill")
 	local fill=new("Frame",{Size=UDim2.fromScale((default-min)/(max-min),1),BackgroundColor3=Color3.new(1,1,1)},bar)
@@ -292,7 +294,7 @@ local function addSlider(c,page,text,min,max,default,cb)
 	corner(knob,"pill"); stroke(knob,T.G2,2); local ks=new("UIScale",{Scale=1},knob)
 	local function setValue(v) v=math.clamp(v,min,max); fill.Size=UDim2.fromScale((v-min)/(max-min),1); val.Text=tostring(v); return v end
 	local dragging=false
-	local function update(x) local a=math.clamp((x-bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1); task.spawn(cb,setValue(math.floor(min+(max-min)*a+0.5))) end
+	local function update(x) local a=math.clamp((x-bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1); task.spawn(function() pcall(cb,setValue(math.floor(min+(max-min)*a+0.5))) end) end
 	bar.InputBegan:Connect(function(i)
 		if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
 			dragging=true; update(i.Position.X); tween(ks,0.15,{Scale=1.3},BACK)
@@ -300,105 +302,59 @@ local function addSlider(c,page,text,min,max,default,cb)
 		end
 	end)
 	UIS.InputChanged:Connect(function(i) if dragging and(i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then update(i.Position.X) end end)
-	return function(v,silent) v=setValue(v); if not silent then task.spawn(cb,v) end end
+	return function(v,silent) v=setValue(v); if not silent then task.spawn(function() pcall(cb,v) end) end end
 end
 
-local function controlRow(c,page,leftText,rightText,onLeft,onRight)
-	local r=row(c.Inner,c,leftText.."/"..rightText,54); r:FindFirstChildOfClass("TextLabel"):Destroy()
-	local l=new("TextButton",{Size=UDim2.new(0.5,-16,0,38),Position=UDim2.fromOffset(12,10),BackgroundColor3=Color3.fromRGB(20,100,50),Text=leftText,Font=F.GothamBlack,TextSize=13,TextColor3=Color3.new(1,1,1),AutoButtonColor=false},r)
-	corner(l,"pill"); gradient(l,ColorSequence.new(Color3.fromRGB(50,255,100),Color3.fromRGB(0,150,50)),20); juice(l,1.04)
-	stroke(l,T.Green,1,0.5)
-	local rt=new("TextButton",{Size=UDim2.new(0.5,-16,0,38),Position=UDim2.new(0.5,4,0,10),BackgroundColor3=Color3.fromRGB(100,20,20),Text=rightText,Font=F.GothamBlack,TextSize=13,TextColor3=Color3.new(1,1,1),AutoButtonColor=false},r)
-	corner(rt,"pill"); gradient(rt,ColorSequence.new(Color3.fromRGB(255,80,80),Color3.fromRGB(150,20,20)),20); juice(rt,1.04)
-	stroke(rt,T.Red,1,0.5)
-	l.Activated:Connect(onLeft); rt.Activated:Connect(onRight)
-	return l,rt
-end
+print("[ApexHub] Parte 5 ✔")
 --// ========== PARTE 6: ABAS ==========
-addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
-addTab("Coin",       "Farm de moedas automático", iconCoin)
-addTab("Auto",       "Escolha as raridades alvo", iconAuto)
-addTab("Velocidade", "Ajuste de velocidade", iconSpeed)
-addTab("Anti-Lag",   "Otimização do jogo", iconLag)
-addTab("Config",     "Ajustes do painel", iconGear)
+addTab("Coin",   "Farm de moedas automático", iconCoin)
+addTab("Config", "Ajustes do painel",         iconGear)
 
-local pAlvo  = pages["Alvo"].Content
-local pCoin  = pages["Coin"].Content
-local pAuto  = pages["Auto"].Content
-local pSpeed = pages["Velocidade"].Content
-local pLag   = pages["Anti-Lag"].Content
-local pCfg   = pages["Config"].Content
+local pCoin = pages["Coin"].Content
+local pCfg  = pages["Config"].Content
 
--- Aba Alvo
-local cAlvoL = card(pAlvo,"Left","Alvo")
-controlRow(cAlvoL,pAlvo,"Ativar","Parar",function()
-	toast({Title="Alvo",Body="Ativado",Color=T.Green})
-end,function()
-	toast({Title="Alvo",Body="Parado",Color=T.Red})
+-- ===== Coin: Farm =====
+local cCoinL = card(pCoin,"Left","Auto Farm")
+addToggle(cCoinL,pCoin,"Ativar Farm",false,function(on)
+	if on then
+		toast({Title="Farm",Body="Farm ativado!",Color=T.Gold,Duration=3})
+	else
+		toast({Title="Farm",Body="Farm desativado",Color=T.Red,Duration=2})
+	end
 end)
-addToggle(cAlvoL,pAlvo,"Auto Target",false,function(on)
-	toast({Title="Auto Target",Body=on and "ON" or "OFF",Color=T.G1})
+addSlider(cCoinL,pCoin,"Intervalo (s)",1,30,5,function(v) end)
+addButton(cCoinL,pCoin,"Coletar Agora",function()
+	toast({Title="Coleta",Body="Coletando moedas...",Color=T.Gold,Duration=2})
 end)
 
-local cAlvoR = card(pAlvo,"Right","Modo")
-addToggle(cAlvoR,pAlvo,"Modo Rápido",false,function() end)
-addSlider(cAlvoR,pAlvo,"Alcance",10,200,50,function(v) end)
+-- ===== Coin: Status =====
+local cCoinR = card(pCoin,"Right","Status")
+local coinLbl = addInfo(cCoinR,pCoin,"Moedas","0")
+addInfo(cCoinR,pCoin,"Status","Parado")
 
--- Aba Coin
-local cCoin = card(pCoin,"Left","Auto Farm")
-addToggle(cCoin,pCoin,"Ativar Farm",false,function(on)
-	if on then toast({Title="Farm",Body="Farm ativado!",Color=T.Gold,Duration=3}) end
-end)
-addButton(cCoin,pCoin,"Ir para o Mapa",function()
-	toast({Title="Teleporte",Body="Indo para o mapa...",Color=T.G1,Duration=3})
-end)
-
-local cCoin2 = card(pCoin,"Right","Status")
-local coinLbl = addInfo(cCoin2,pCoin,"Moedas no Banco","0")
+-- contador visual (troque pela lógica real do jogo)
 task.spawn(function()
 	local n = 0
 	while true do
 		task.wait(2); n = n + math.random(1,5)
-		pcall(function() coinLbl.Text = tostring(n) end)
+		pcall(function()
+			if coinLbl and coinLbl.Parent then coinLbl.Text = tostring(n) end
+		end)
 	end
 end)
 
--- Aba Auto
-local cAutoL = card(pAuto,"Left","Raridades")
-for _, r in ipairs({"Comum","Raro","Épico","Lendário","Mítico"}) do
-	addToggle(cAutoL,pAuto,r,false,function() end)
-end
-local cAutoR = card(pAuto,"Right","Ações")
-addButton(cAutoR,pAuto,"Ativar Tudo",function() toast({Title="Auto",Body="Todas ativas",Color=T.G1}) end)
-addButton(cAutoR,pAuto,"Desativar Tudo",function() toast({Title="Auto",Body="Todas off",Color=T.Red}) end)
+-- ===== Config =====
+local cCfgL = card(pCfg,"Left","Painel")
+local closeBtn = addButton(cCfgL,pCfg,"Fechar Painel",function() end)
+addToggle(cCfgL,pCfg,"Salvar Config",true,function() end)
 
--- Aba Velocidade
-local cSpd = card(pSpeed,"Left","Velocidade")
-addSlider(cSpd,pSpeed,"Velocidade",16,200,16,function(v) end)
-addToggle(cSpd,pSpeed,"Ativar Speed",false,function() end)
-local cSpdR = card(pSpeed,"Right","Extra")
-addSlider(cSpdR,pSpeed,"Pulo",50,300,50,function() end)
-addButton(cSpdR,pSpeed,"Resetar",function() toast({Title="Reset",Body="Valores padrão",Color=T.G1}) end)
-
--- Aba Anti-Lag
-local cLag = card(pLag,"Left","Otimização")
-addToggle(cLag,pLag,"Anti-Lag",false,function(on)
-	toast({Title="Anti-Lag",Body=on and "Ativado" or "Desativado",Color=T.Green})
-end)
-addToggle(cLag,pLag,"Reduzir Partículas",false,function() end)
-local cLagR = card(pLag,"Right","FPS")
-addInfo(cLagR,pLag,"FPS Atual","60")
-addButton(cLagR,pLag,"Limpar Cache",function() toast({Title="Cache",Body="Limpo",Color=T.G1}) end)
-
--- Aba Config
-local cCfg = card(pCfg,"Left","Painel")
-addButton(cCfg,pCfg,"Fechar Painel",function() -- será ligado ao setOpen depois
-end)
-addToggle(cCfg,pCfg,"Salvar Config",true,function() end)
 local cCfgR = card(pCfg,"Right","Sobre")
 addInfo(cCfgR,pCfg,"Versão","2.0")
 addInfo(cCfgR,pCfg,"Autor","Apex Hub")
---// ========== PARTE 7: FAB, INTRO, GATE ==========
+addInfo(cCfgR,pCfg,"Modo","Coin Only")
+
+print("[ApexHub] Parte 6 ✔")
+--// ========== PARTE 7: FAB / INTRO / GATE ==========
 local fabSc = Instance.new("UIScale")
 local fab = new("TextButton",{
 	AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-24,1,-24),
@@ -433,23 +389,27 @@ fab.InputEnded:Connect(function()
 	if fabStart and(fab.AbsolutePosition-fabStart).Magnitude<6 then setOpen(not open) end; fabStart=nil
 end)
 minBtn.Activated:Connect(function() setOpen(false) end)
-tabs["Alvo"].Btn:ActivatedFire and nil -- ignora
-tabs["Alvo"].Btn.Activated:Fire and nil
--- Seleciona primeira aba:
+
+-- "Fechar Painel" da Config
+if closeBtn then
+	closeBtn.Activated:Connect(function() setOpen(false) end)
+end
+
+-- Seleciona Coin como aba inicial
 for n,t in pairs(tabs) do
-	local active = (n=="Alvo")
+	local active = (n=="Coin")
 	t.Btn.BackgroundColor3 = active and T.Row or T.Rail
 	t.SetIcon(active and T.G1 or T.Sub)
 	t.Text.TextColor3 = active and T.G1 or T.Text
 	t.Page.Visible = active
 end
 
--- Ligar botão "Fechar Painel" da config
-for _,b in ipairs(pCfg:GetDescendants()) do
-	if b:IsA("TextButton") and b.Text=="Fechar Painel" then
-		b.Activated:Connect(function() setOpen(false) end)
+-- Spinner global
+RunService.RenderStepped:Connect(function(dt)
+	for _,s in ipairs(spinners) do
+		if s[1] and s[1].Parent then s[1].Rotation = (s[1].Rotation + s[2]*dt) % 360 end
 	end
-end
+end)
 
 -- INTRO
 local function runIntro()
@@ -490,6 +450,7 @@ local function runIntro()
 	end)
 end
 
+-- GATE
 local function runGate()
 	fab.Visible=false
 	local gate=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.2,BorderSizePixel=0,ZIndex=160,Active=true},gui)
@@ -511,7 +472,7 @@ local function runGate()
 
 	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
 	local inStroke=stroke(inWrap,T.Stroke,1.5)
-	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
+	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(24,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
 
 	local verificado = false
 	local function checkKey()
@@ -529,12 +490,5 @@ local function runGate()
 	end)
 end
 
--- Spinner loop global
-RunService.RenderStepped:Connect(function(dt)
-	for _,s in ipairs(spinners) do
-		if s[1] and s[1].Parent then s[1].Rotation = (s[1].Rotation + s[2]*dt) % 360 end
-	end
-end)
-
 runGate()
-print("APEX HUB Premium carregado!")
+print("[ApexHub] TUDO carregado ✔ — key: apex")
