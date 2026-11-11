@@ -10,7 +10,6 @@ local F   = Enum.Font
 local LEFT, CENTER, RIGHT = Enum.TextXAlignment.Left, Enum.TextXAlignment.Center, Enum.TextXAlignment.Right
 local BACK, SINE = Enum.EasingStyle.Back, Enum.EasingStyle.Sine
 
--- ============ TEMA ============
 local T = {
 	Bg=Color3.fromRGB(5,8,18), Rail=Color3.fromRGB(8,13,27), Card=Color3.fromRGB(12,20,38),
 	Row=Color3.fromRGB(18,30,52), Stroke=Color3.fromRGB(32,55,90),
@@ -22,7 +21,6 @@ local T = {
 }
 local ACCENT = ColorSequence.new(T.G1, T.G2)
 
--- ============ HELPERS ============
 local function new(class,props,parent)
 	local o=Instance.new(class)
 	for k,v in pairs(props or {}) do o[k]=v end
@@ -89,7 +87,7 @@ local function particles(parent,n)
 	end
 end
 
--- ============ BOTÃO PRIMÁRIO (usado no gate) ============
+-- FUNÇÃO MESTRA DO BOTÃO (Garante que o botão apareça)
 local function primary(parent,props)
 	local b=new("TextButton",props,parent)
 	b.BackgroundColor3=Color3.new(1,1,1); b.AutoButtonColor=false
@@ -97,7 +95,6 @@ local function primary(parent,props)
 	return b
 end
 
--- ============ ÍCONES DAS ABAS (emoji) ============
 local function emojiIcon(emoji)
 	return function(ic)
 		local lbl=new("TextLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
@@ -111,7 +108,6 @@ local iconAuto   = emojiIcon("🤖")
 local iconSpeed  = emojiIcon("⚡")
 local iconLag    = emojiIcon("🧹")
 local iconGear   = emojiIcon("⚙️")
--- ============ GUI ============
 local parentGui=(gethui and gethui()) or CoreGui
 local old=parentGui:FindFirstChild("APEXHub"); if old then old:Destroy() end
 local gui=new("ScreenGui",{Name="APEXHub",ResetOnSpawn=false,DisplayOrder=100,
@@ -123,7 +119,6 @@ spinConn=RunService.RenderStepped:Connect(function(dt)
 	for _,s in ipairs(spinners) do s[1].Rotation=(s[1].Rotation+s[2]*dt)%360 end
 end)
 
--- FAB com avatar
 local fab=new("TextButton",{Size=UDim2.fromOffset(52,52),Position=UDim2.new(0,16,0.5,-26),
 	BackgroundColor3=Color3.fromRGB(8,14,10),Text="",AutoButtonColor=false},gui)
 corner(fab,"pill")
@@ -139,7 +134,6 @@ task.spawn(function()
 	pcall(function() fabAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end)
 end)
 
--- ============ NOTIFICAÇÕES ============
 local toastLayer=new("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,60),
 	Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,ZIndex=70},gui)
 new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder,
@@ -159,7 +153,6 @@ local function toast(opts)
 
 	local holder=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
 		BackgroundTransparency=1,LayoutOrder=lo},toastLayer)
-
 	local card=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
 		BackgroundColor3=Color3.fromRGB(10,16,12),Position=UDim2.fromOffset(330,0),
 		ClipsDescendants=false},holder)
@@ -173,9 +166,6 @@ local function toast(opts)
 	local bar=new("Frame",{Size=UDim2.new(0,3,1,-20),Position=UDim2.fromOffset(10,10),
 		BackgroundColor3=col,BorderSizePixel=0},card)
 	corner(bar,"pill")
-	local barGlow=new("Frame",{Size=UDim2.new(0,12,1,-20),Position=UDim2.fromOffset(4,10),
-		BackgroundColor3=col,BackgroundTransparency=0.75,BorderSizePixel=0},card)
-	corner(barGlow,"pill")
 
 	local iconCircle=new("Frame",{Size=UDim2.fromOffset(32,32),Position=UDim2.fromOffset(20,10),
 		BackgroundColor3=col:Lerp(Color3.new(0,0,0),0.6)},card)
@@ -196,7 +186,6 @@ local function toast(opts)
 	end
 
 	new("Frame",{Size=UDim2.new(1,0,0,8),BackgroundTransparency=1,LayoutOrder=99},card)
-
 	local progTrack=new("Frame",{Size=UDim2.new(1,-24,0,2),Position=UDim2.new(0,12,1,-6),
 		BackgroundColor3=Color3.fromRGB(30,42,34),BorderSizePixel=0},card)
 	corner(progTrack,"pill")
@@ -204,7 +193,6 @@ local function toast(opts)
 	corner(prog,"pill")
 	gradient(prog,ACCENT,0)
 	tween(prog,dur,{Size=UDim2.fromScale(0,1)},Enum.EasingStyle.Linear)
-
 	tween(card,0.4,{Position=UDim2.fromOffset(0,0)},BACK)
 
 	task.delay(dur,function()
@@ -213,7 +201,6 @@ local function toast(opts)
 		task.wait(0.35); holder:Destroy()
 	end)
 end
--- ============ PAINEL / TABS ============
 local W,H=680,390
 local root=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),
 	Size=UDim2.fromOffset(W,H),BackgroundTransparency=1,Visible=false},gui)
@@ -298,8 +285,6 @@ local function addTab(name,subtitle,icon)
 end
 
 loop(statusDot,0.9,{BackgroundTransparency=0.65})
-
--- Abas vazias (só ícone + título)
 addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
 addTab("Auto",       "Escolha as raridades alvo", iconAuto)
 addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
@@ -331,7 +316,6 @@ end)
 minBtn.Activated:Connect(function() setOpen(false) end)
 draggable(header,root)
 tabs["Alvo"].Select()
--- ============ INTRO / LOADING / GATE ============
 local function runIntro()
 	fab.Visible=false
 	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
@@ -405,12 +389,14 @@ local function runGate()
 	local bs=stroke(box,Color3.new(1,1,1),2,0.05)
 	spin(gradient(bs,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2)}),30),70)
 	local boxSc=new("UIScale",{Scale=0},box); tween(boxSc,0.6,{Scale=math.min(1,fitScale()+0.15)},BACK)
+	
 	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
 	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
 	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
+	
 	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
 	local inStroke=stroke(inWrap,T.Stroke,1.5)
 	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
@@ -419,6 +405,7 @@ local function runGate()
 		corner(sh,"pill"); new("UIStroke",{Color=T.G1,Thickness=2,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},sh)
 		local bd=new("Frame",{Size=UDim2.fromOffset(16,12),Position=UDim2.fromOffset(16,20),BackgroundColor3=T.G1,BorderSizePixel=0},inWrap); corner(bd,4)
 	end
+	
 	input.Focused:Connect(function() tween(inStroke,0.2,{Color=T.G1}) end)
 	input.FocusLost:Connect(function(enter) tween(inStroke,0.2,{Color=T.Stroke}); if enter then task.defer(function() Panel._verify() end) end end)
 	
@@ -476,4 +463,4 @@ local function runGate()
 end
 
 runGate()
-print("APEX HUB carregado (sem FPS, com botão).")
+print("APEX HUB carregado!")
