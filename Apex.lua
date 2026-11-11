@@ -140,7 +140,6 @@ local function iconLag(ic)
 	local x2=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x2,"pill")
 	return function(c) for _,ch in ipairs(ic:GetChildren()) do if ch:IsA("Frame") then ch.BackgroundColor3=c end end end
 end
--- Novo ícone da aba Survival (Coração)
 local function iconHeart(ic)
 	local left = new("Frame", {Size=UDim2.fromOffset(11, 15), Position = UDim2.fromOffset(7, 8), Rotation = -45, BackgroundColor3 = T.Sub, BorderSizePixel = 0}, ic)
 	corner(left, "pill")
@@ -162,7 +161,6 @@ spinConn=RunService.RenderStepped:Connect(function(dt)
 	if not gui.Parent then spinConn:Disconnect(); return end
 	for _,s in ipairs(spinners) do s[1].Rotation=(s[1].Rotation+s[2]*dt)%360 end
 end)
-
 local fab=new("TextButton",{Size=UDim2.fromOffset(52,52),Position=UDim2.new(0,16,0.5,-26),
 	BackgroundColor3=Color3.fromRGB(8,14,10),Text="",AutoButtonColor=false},gui)
 corner(fab,"pill")
@@ -333,14 +331,11 @@ loop(statusDot,0.9,{BackgroundTransparency=0.65})
 addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
 addTab("Auto",       "Escolha as raridades alvo", iconAuto)
 addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
-addTab("Survival",   "Infinite Status",         iconHeart) -- NOVA ABA AQUI
+addTab("Survival",   "Infinite Status",         iconHeart)
 addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
 addTab("Config",     "Ajustes do painel",       iconGear)
-
--- ===================== LÓGICA E UI DO SURVIVAL (SAVANNAH LIFE) =====================
 local statusStates = { Stamina = false, Hunger = false, Thirst = false }
 
--- Loop de Status
 task.spawn(function()
 	RunService.Heartbeat:Connect(function()
 		if not statusStates.Stamina and not statusStates.Hunger and not statusStates.Thirst then return end
@@ -377,13 +372,11 @@ task.spawn(function()
 		
 		ProcessObject(lp)
 		ProcessObject(char)
-				local backpack = lp:FindFirstChild("Backpack"); if backpack then ProcessObject(backpack) end
+		local backpack = lp:FindFirstChild("Backpack"); if backpack then ProcessObject(backpack) end
 		local playerGui = lp:FindFirstChild("PlayerGui"); if playerGui then ProcessObject(playerGui) end
-		end)
 	end)
 end)
 
--- Função pra desenhar ícones dos Toggles (Raio, Maçã, Gota)
 local function MakeToggleIcon(parent, iconType)
 	local container = new("Frame", {Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 1}, parent)
 	
@@ -406,7 +399,6 @@ local function MakeToggleIcon(parent, iconType)
 	return container
 end
 
--- Função de criar o Toggle na aba Survival
 local function CreateToggle(title, iconType, statusKey)
 	local row = new("Frame", {
 		Size = UDim2.new(1, 0, 0, 54),
@@ -464,11 +456,9 @@ local function CreateToggle(title, iconType, statusKey)
 	end)
 end
 
--- Adiciona os Toggles com textos em inglês
 CreateToggle("Infinite Stamina", "Stamina", "Stamina")
 CreateToggle("Infinite Hunger", "Hunger", "Hunger")
 CreateToggle("Infinite Thirst", "Thirst", "Thirst")
--- ================================================================================
 
 local open=false
 local function setOpen(v)
