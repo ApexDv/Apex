@@ -87,26 +87,59 @@ local function particles(parent,n)
 	end
 end
 
-local function primary(parent,props)
-	local b=new("TextButton",props,parent)
-	b.BackgroundColor3=Color3.new(1,1,1); b.AutoButtonColor=false
-	corner(b,"pill"); spin(gradient(b,ACCENT,20),40); juice(b,1.04)
-	return b
-end
-
-local function emojiIcon(emoji)
-	return function(ic)
-		local lbl=new("TextLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
-			Text=emoji,Font=F.GothamBlack,TextSize=20,TextXAlignment=CENTER,
-			TextYAlignment=Enum.TextYAlignment.Center,TextColor3=T.Sub},ic)
-		return function(c) lbl.TextColor3=c end
+-- ÍCONES DO GUI ANTIGO
+local function chev(parent,tx,ty,dir,col,L,th)
+	L=L or 8; th=th or 2.5; local d=L/2*0.7071; local bars={}
+	local function bar(cx,cy,rot)
+		local b=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(cx,cy),
+			Size=UDim2.fromOffset(L,th),Rotation=rot,BackgroundColor3=col,BorderSizePixel=0},parent)
+		corner(b,"pill"); bars[#bars+1]=b
 	end
+	if dir=="right" then bar(tx-d,ty-d,45); bar(tx-d,ty+d,-45)
+	else bar(tx-d,ty-d,45); bar(tx+d,ty-d,-45) end
+	return bars
 end
-local iconTarget = emojiIcon("🎯")
-local iconAuto   = emojiIcon("🤖")
-local iconSpeed  = emojiIcon("⚡")
-local iconLag    = emojiIcon("🧹")
-local iconGear   = emojiIcon("⚙️")
+local function iconTarget(ic)
+	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(20,20),BackgroundTransparency=1},ic)
+	corner(ring,"pill")
+	local rs=new("UIStroke",{Thickness=2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},ring)
+	local dot=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(7,7),BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+	corner(dot,"pill")
+	return function(c) rs.Color=c; dot.BackgroundColor3=c end
+end
+local function iconAuto(ic)
+	local a=chev(ic,26,20,"right",T.Sub,9,2.6); local b=chev(ic,18,20,"right",T.Sub,9,2.6)
+	return function(c) for _,x in ipairs(a) do x.BackgroundColor3=c end; for _,x in ipairs(b) do x.BackgroundColor3=c end end
+end
+local function iconSpeed(ic)
+	local bars={}
+	for i,w in ipairs({18,13,8}) do
+		local b=new("Frame",{Size=UDim2.fromOffset(w,3),Position=UDim2.fromOffset(11,12+(i-1)*6),BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+		corner(b,"pill"); bars[i]=b
+	end
+	return function(c) for _,b in ipairs(bars) do b.BackgroundColor3=c end end
+end
+local function iconGear(ic)
+	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(12,12),BackgroundTransparency=1},ic)
+	corner(ring,"pill")
+	local rs=new("UIStroke",{Thickness=2.2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},ring)
+	local teeth={}
+	for i=0,7 do
+		local a=math.rad(i*45)
+		local t=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,math.sin(a)*9,0.5,-math.cos(a)*9),Size=UDim2.fromOffset(4,4),Rotation=i*45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+		corner(t,1); teeth[#teeth+1]=t
+	end
+	return function(c) rs.Color=c; for _,t in ipairs(teeth) do t.BackgroundColor3=c end end
+end
+local function iconLag(ic)
+	for i=1,3 do
+		local b=new("Frame",{Size=UDim2.fromOffset(5,6+i*4),Position=UDim2.fromOffset(6+(i-1)*8,24-i*4),BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+		corner(b,2)
+	end
+	local x1=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x1,"pill")
+	local x2=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x2,"pill")
+	return function(c) for _,ch in ipairs(ic:GetChildren()) do if ch:IsA("Frame") then ch.BackgroundColor3=c end end end
+end
 local parentGui=(gethui and gethui()) or CoreGui
 local old=parentGui:FindFirstChild("APEXHub"); if old then old:Destroy() end
 local gui=new("ScreenGui",{Name="APEXHub",ResetOnSpawn=false,DisplayOrder=100,
@@ -333,49 +366,29 @@ local function runIntro()
 	local best=new("TextLabel",{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,94),BackgroundTransparency=1,
 		Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
 	local bestSc=new("UIScale",{Scale=0.6},best)
+	
 	task.spawn(function()
+		-- Animação mais lenta e suave das letras
 		for i,p in ipairs(parts) do
-			task.delay((i-1)*0.13,function()
-				tween(p[1],0.35,{TextTransparency=0})
-				TweenService:Create(p[2],TweenInfo.new(0.5,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
+			task.delay((i-1)*0.2,function()
+				tween(p[1],0.5,{TextTransparency=0})
+				TweenService:Create(p[2],TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
 			end)
 		end
-		task.wait(0.75); tween(line,0.5,{Size=UDim2.fromOffset(300,3)}); tween(best,0.5,{TextTransparency=0})
-		TweenService:Create(bestSc,TweenInfo.new(0.5,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
-		task.wait(1.3)
-		for _,p in ipairs(parts) do tween(p[1],0.4,{TextTransparency=1}) end
-		tween(best,0.4,{TextTransparency=1}); tween(line,0.4,{Size=UDim2.fromOffset(0,3)})
-		task.wait(0.3); tween(splash,0.5,{BackgroundTransparency=1}); sg.Enabled=false
-		task.wait(0.5); splash:Destroy(); fabSc.Scale=0; fab.Visible=true
-		TweenService:Create(fabSc,TweenInfo.new(0.5,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
-		task.wait(0.3); setOpen(true)
-	end)
-end
-
-local function runLoading(onDone)
-	local ls=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.fromRGB(3,7,18),BorderSizePixel=0,ZIndex=200},gui)
-	gradient(ls,ColorSequence.new(Color3.fromRGB(5,18,42),Color3.fromRGB(0,0,0)),90); particles(ls,18)
-	local logoBox=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.42,0),Size=UDim2.fromOffset(72,72),BackgroundColor3=Color3.new(1,1,1),ZIndex=201},ls)
-	corner(logoBox,20); spin(gradient(logoBox,ACCENT,45),90)
-	local logoSc=new("UIScale",{Scale=0},logoBox); tween(logoSc,0.6,{Scale=1},BACK); loop(logoSc,1.4,{Scale=1.08})
-	local loadAvatar=new("ImageLabel",{Size=UDim2.fromOffset(60,60),AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),BackgroundTransparency=1,ZIndex=202},logoBox)
-	corner(loadAvatar,16)
-	task.spawn(function() pcall(function() loadAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end) end)
-	local loadTitle=label(ls,{Size=UDim2.new(1,0,0,30),Position=UDim2.new(0,0,0.52,10),Text="APEX HUB THE BEST",Font=F.GothamBlack,TextSize=22,TextXAlignment=CENTER,ZIndex=201})
-	gradient(loadTitle,ACCENT,0)
-	local msgs={"Iniciando o motor Nexus...","Conectando aos servidores...","Carregando ovos...","Quase lá..."}
-	local msgLabel=label(ls,{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0.60,0),Text=msgs[1],Font=F.GothamBold,TextSize=13,TextColor3=T.Sub,TextXAlignment=CENTER,ZIndex=201})
-	local barBg=new("Frame",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0.65,0),Size=UDim2.fromOffset(260,5),BackgroundColor3=T.Row,BorderSizePixel=0,ZIndex=201},ls)
-	corner(barBg,"pill")
-	local barFill=new("Frame",{Size=UDim2.fromScale(0,1),BackgroundColor3=Color3.new(1,1,1)},barBg)
-	corner(barFill,"pill"); gradient(barFill,ACCENT,0)
-	label(ls,{Size=UDim2.new(1,0,0,16),Position=UDim2.new(0,0,0.92,0),Text="v3.0  ·  Steal An Egg  ·  Motor Nexus",Font=F.GothamBold,TextSize=11,TextColor3=T.Sub,TextXAlignment=CENTER,ZIndex=201})
-	task.spawn(function()
-		for i=1,#msgs do
-			msgLabel.Text=msgs[i]
-			tween(barFill,0.5,{Size=UDim2.fromScale(i/#msgs,1)},Enum.EasingStyle.Quad); task.wait(0.5)
-		end
-		task.wait(0.3); tween(ls,0.6,{BackgroundTransparency=1}); task.wait(0.4); ls:Destroy(); onDone()
+		task.wait(1.2); 
+		tween(line,0.8,{Size=UDim2.fromOffset(300,3)}); 
+		tween(best,0.8,{TextTransparency=0})
+		TweenService:Create(bestSc,TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
+		
+		task.wait(2.0) -- Tempo maior na tela
+		
+		-- Some suavemente
+		for _,p in ipairs(parts) do tween(p[1],0.6,{TextTransparency=1}) end
+		tween(best,0.6,{TextTransparency=1}); tween(line,0.6,{Size=UDim2.fromOffset(0,3)})
+		task.wait(0.5); tween(splash,0.6,{BackgroundTransparency=1}); sg.Enabled=false
+		task.wait(0.6); splash:Destroy(); fabSc.Scale=0; fab.Visible=true
+		TweenService:Create(fabSc,TweenInfo.new(0.6,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
+		task.wait(0.4); setOpen(true)
 	end)
 end
 
@@ -383,7 +396,7 @@ local function runGate()
 	fab.Visible=false
 	local gate=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.2,BorderSizePixel=0,ZIndex=160,Active=true},gui)
 	particles(gate,18)
-	local box=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(380,292),BackgroundColor3=Color3.new(1,1,1)},gate)
+	local box=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(380,220),BackgroundColor3=Color3.new(1,1,1)},gate)
 	corner(box,26); gradient(box,ColorSequence.new(Color3.fromRGB(10,24,48),T.Bg),60)
 	local bs=stroke(box,Color3.new(1,1,1),2,0.05)
 	spin(gradient(bs,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2)}),30),70)
@@ -391,6 +404,7 @@ local function runGate()
 	
 	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
+	
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
 	
@@ -406,9 +420,6 @@ local function runGate()
 		corner(sh,"pill"); new("UIStroke",{Color=T.G1,Thickness=2,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},sh)
 		local bd=new("Frame",{Size=UDim2.fromOffset(16,12),Position=UDim2.fromOffset(16,20),BackgroundColor3=T.G1,BorderSizePixel=0},inWrap); corner(bd,4)
 	end
-	
-	local msg=label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,196),Text="",Font=F.GothamBold,TextSize=12,TextXAlignment=CENTER})
-	local btn=primary(box,{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,224),Text="VERIFICAR",Font=F.GothamBlack,TextSize=14,TextColor3=T.Bg})
 
 	local function successAnim(cb)
 		local flash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.G1,BackgroundTransparency=1,ZIndex=170},box)
@@ -440,49 +451,28 @@ local function runGate()
 
 	local verificado = false
 
-	-- Função que confere e executa a animação
 	local function checkKey()
 		if verificado then return end
 		if (input.Text:gsub("%s+","")):lower() == KEY then
 			verificado = true
-			btn.Text = "ACESSO LIBERADO"
-			msg.TextColor3 = T.G1
-			msg.Text = "Key válida! Bem-vindo."
 			tween(inStroke,0.2,{Color=T.G1})
-			task.wait(0.4)
-			successAnim(function() runLoading(runIntro) end)
+			task.wait(0.3)
+			successAnim(function() runIntro() end) -- Vai direto pra animação da 2ª print
 		end
 	end
 
-	-- Verifica sozinho no milissegundo que digitar
 	input:GetPropertyChangedSignal("Text"):Connect(function()
 		if (input.Text:gsub("%s+","")):lower() == KEY then
 			checkKey()
 		end
 	end)
 
-	-- Verifica ao apertar Enter
 	input.FocusLost:Connect(function(enter)
 		tween(inStroke,0.2,{Color=T.Stroke})
-		if enter then
-			if not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY and input.Text ~= "" then
-				msg.TextColor3 = T.Red
-				msg.Text = "Key inválida. Tente novamente."
-				tween(inStroke,0.15,{Color=T.Red})
-				task.wait(1)
-				tween(inStroke,0.3,{Color=T.Stroke})
-			end
-		end
-	end)
-
-	-- Verifica ao clicar no botão
-	btn.Activated:Connect(function()
-		if not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY then
-			msg.TextColor3 = T.Red
-			msg.Text = "Key inválida. Tente novamente."
-			btn.Text = "VERIFICAR"
-		else
-			checkKey()
+		if enter and not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY and input.Text ~= "" then
+			tween(inStroke,0.15,{Color=T.Red})
+			task.wait(1)
+			tween(inStroke,0.3,{Color=T.Stroke})
 		end
 	end)
 end
