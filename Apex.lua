@@ -87,7 +87,7 @@ local function particles(parent,n)
 	end
 end
 
--- ============ ÍCONES DESENHADOS (SEM EMOJIS) ============
+-- ============ ÍCONES DESENHADOS ============
 local function chev(parent,tx,ty,dir,col,L,th)
 	L=L or 8; th=th or 2.5; local d=L/2*0.7071; local bars={}
 	local function bar(cx,cy,rot)
@@ -103,7 +103,7 @@ end
 -- Ícone de Alvo (Ovo)
 local function iconTarget(ic)
 	local egg=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(14,18),BackgroundTransparency=1},ic)
-	corner(egg, UDim.new(0.5, 0)) -- Faz o formato de ovo
+	corner(egg, UDim.new(0.5, 0))
 	local rs=new("UIStroke",{Thickness=2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},egg)
 	return function(c) rs.Color=c end
 end
@@ -112,10 +112,16 @@ end
 local function iconCoin(ic)
 	local coin=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(18,18),BackgroundTransparency=1},ic)
 	corner(coin,"pill")
-	local rs=new("UIStroke",{Thickness=2.5,Color=T.Gold,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},rs or coin) -- rs safado kkkk, aplicando na moeda
+	local rs=new("UIStroke",{Thickness=2.5,Color=T.Gold,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},coin)
 	local inner=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(6,6),BackgroundColor3=T.Gold,BorderSizePixel=0},coin)
 	corner(inner,"pill")
 	return function(c) rs.Color=c; inner.BackgroundColor3=c end
+end
+
+-- Ícone Auto (Setas)
+local function iconAuto(ic)
+	local a=chev(ic,26,20,"right",T.Sub,9,2.6); local b=chev(ic,18,20,"right",T.Sub,9,2.6)
+	return function(c) for _,x in ipairs(a) do x.BackgroundColor3=c end; for _,x in ipairs(b) do x.BackgroundColor3=c end end
 end
 
 -- Ícone de Velocidade (Raio)
@@ -149,31 +155,44 @@ local function iconGear(ic)
 	return function(c) rs.Color=c; for _,t in ipairs(teeth) do t.BackgroundColor3=c end end
 end
 
--- Botões Premium Desenhados
 local function primary(parent,props)
 	local b=new("TextButton",props,parent)
 	b.BackgroundColor3=Color3.new(1,1,1); b.AutoButtonColor=false
 	corner(b,"pill"); spin(gradient(b,ACCENT,20),40); juice(b,1.04)
 	return b
 end
-
-local function controlRow(c,page,leftText,rightText,onLeft,onRight)
-	local r=row(c,page,leftText.."/"..rightText,54); r:FindFirstChildOfClass("TextLabel"):Destroy()
-	
-    -- Botão GO (Verde Brilhante)
-    local l=new("TextButton",{Size=UDim2.new(0.5,-16,0,38),Position=UDim2.fromOffset(12,10),BackgroundColor3=Color3.fromRGB(20, 100, 50),Text=leftText,Font=F.GothamBlack,TextSize=13,TextColor3=Color3.new(1,1,1),AutoButtonColor=false},r)
-	corner(l,"pill"); gradient(l, ColorSequence.new(Color3.fromRGB(50,255,100), Color3.fromRGB(0,150,50)),20); juice(l,1.04)
-	stroke(l, T.Green, 1, 0.5)
-    
-    -- Botão STOP (Vermelho Escuro)
-	local rt=new("TextButton",{Size=UDim2.new(0.5,-16,0,38),Position=UDim2.new(0.5,4,0,10),BackgroundColor3=Color3.fromRGB(100, 20, 20),Text=rightText,Font=F.GothamBlack,TextSize=13,TextColor3=Color3.new(1,1,1),AutoButtonColor=false},r)
-	corner(rt,"pill"); gradient(rt, ColorSequence.new(Color3.fromRGB(255,80,80), Color3.fromRGB(150,20,20)),20); juice(rt,1.04)
-	stroke(rt, T.Red, 1, 0.5)
-    
-	l.Activated:Connect(onLeft); rt.Activated:Connect(onRight)
-	return l,rt
+local function newPage(name)
+	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
+		ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
+	local cols=new("Frame",{Size=UDim2.new(1,-8,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1},sf)
+	new("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder},cols)
+	local function col(i)
+		local c=new("Frame",{Size=UDim2.new(0.5,-5,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,LayoutOrder=i},cols)
+		new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder},c)
+		return c
+	end
+	pages[name]={Scroll=sf,Left=col(1),Right=col(2),Rows={},Cards={}}
+	return pages[name]
 end
--- (Aqui vem toda a parte de criação do `gui`, `fab`, `toast`, `root`, `main`, `header`, `rail` que não mudou nada, então vou pular para a parte de adicionar as abas)
+
+local function card(page,side,title)
+	local col=page[side]
+	local c=new("Frame",{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundColor3=T.Card,LayoutOrder=nxt(col),BackgroundTransparency=0.4},col)
+	corner(c,18); stroke(c,T.Stroke,1)
+	new("UIScale",{Name="Pop"},c); new("UIListLayout",{SortOrder=Enum.SortOrder.LayoutOrder},c)
+	new("UIPadding",{PaddingBottom=UDim.new(0,8)},c); page.Cards[#page.Cards+1]=c
+	local h=new("Frame",{Size=UDim2.new(1,0,0,36),BackgroundTransparency=1,LayoutOrder=0},c)
+	local dot=new("Frame",{Size=UDim2.fromOffset(8,8),Position=UDim2.fromOffset(16,14),BackgroundColor3=T.G1,BorderSizePixel=0},h); corner(dot,"pill"); loop(dot,1.4,{BackgroundTransparency=0.6})
+	local hl=label(h,{Size=UDim2.new(1,-44,1,0),Position=UDim2.fromOffset(32,0),Text=title:upper(),Font=F.GothamBold,TextSize=11})
+	return c,hl
+end
+
+local function row(c,page,name,height)
+	local r=new("Frame",{Name=name,Size=UDim2.new(1,0,0,height or 40),BackgroundTransparency=1,LayoutOrder=nxt(c)},c)
+	local ln=new("Frame",{Size=UDim2.new(1,-28,0,2),Position=UDim2.fromOffset(14,0),BackgroundColor3=T.Stroke,BorderSizePixel=0},r); corner(ln,"pill")
+	local l=label(r,{Size=UDim2.new(1,-130,1,0),Position=UDim2.fromOffset(16,0),Text=name,TextTruncate=Enum.TextTruncate.AtEnd})
+	page.Rows[#page.Rows+1]=r; return r,l
+end
 
 local function addToggle(c,page,text,default,cb)
 	local r=row(c,page,text)
@@ -218,36 +237,43 @@ local function addSlider(c,page,text,min,max,default,cb)
 	return function(v,silent) v=setValue(v); if not silent then task.spawn(cb,v) end end
 end
 
--- ============ ADICIONANDO AS ABAS COM OS NOVOS ÍCONES ============
+local function controlRow(c,page,leftText,rightText,onLeft,onRight)
+	local r=row(c,page,leftText.."/"..rightText,54); r:FindFirstChildOfClass("TextLabel"):Destroy()
+	local l=new("TextButton",{Size=UDim2.new(0.5,-16,0,38),Position=UDim2.fromOffset(12,10),BackgroundColor3=Color3.fromRGB(20, 100, 50),Text=leftText,Font=F.GothamBlack,TextSize=13,TextColor3=Color3.new(1,1,1),AutoButtonColor=false},r)
+	corner(l,"pill"); gradient(l, ColorSequence.new(Color3.fromRGB(50,255,100), Color3.fromRGB(0,150,50)),20); juice(l,1.04)
+	stroke(l, T.Green, 1, 0.5)
+	local rt=new("TextButton",{Size=UDim2.new(0.5,-16,0,38),Position=UDim2.new(0.5,4,0,10),BackgroundColor3=Color3.fromRGB(100, 20, 20),Text=rightText,Font=F.GothamBlack,TextSize=13,TextColor3=Color3.new(1,1,1),AutoButtonColor=false},r)
+	corner(rt,"pill"); gradient(rt, ColorSequence.new(Color3.fromRGB(255,80,80), Color3.fromRGB(150,20,20)),20); juice(rt,1.04)
+	stroke(rt, T.Red, 1, 0.5)
+	l.Activated:Connect(onLeft); rt.Activated:Connect(onRight)
+	return l,rt
+end
 loop(statusDot,0.9,{BackgroundTransparency=0.65})
 addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
-addTab("Coin",       "Farm de moedas automático", iconCoin) -- NOVA ABA COM ÍCONE DE MOEDA
+addTab("Coin",       "Farm de moedas automático", iconCoin)
 addTab("Auto",       "Escolha as raridades alvo", iconAuto)
 addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
 addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
 addTab("Config",     "Ajustes do painel",       iconGear)
 
--- Cria as páginas
-local pAlvo=pages["Alvo"]
-local pCoin=pages["Coin"]
-local pAuto=pages["Auto"]
-local pSpeed=pages["Velocidade"]
-local pLag=pages["Anti-Lag"]
-local pCfg=pages["Config"]
-
--- Lógica fake pro Coin (apenas visual pra você testar)
-local cCoin=card(pCoin,"Left","Auto Farm")
-addToggle(cCoin,pCoin,"Ativar Farm",false,function(on)
-    if on then
-        toast({Title="Farm",Body="Farm ativado!",Color=T.Gold,Duration=3})
-    end
+-- Preenche a aba Coin com os botões desenhados
+local pCoin = pages["Coin"]
+local cCoin = card(pCoin, "Left", "Auto Farm")
+addToggle(cCoin, pCoin, "Ativar Farm (Coin)", false, function(on) 
+    if on then toast({Title="Coin",Body="Auto farm ligado!",Color=T.Gold,Duration=3}) end 
 end)
-addButton(cCoin,pCoin,"Ir para o Mapa",function()
-    toast({Title="Teleporte",Body="Indo para o mapa...",Color=T.G1,Duration=3})
+addButton(cCoin, pCoin, "Teleportar para o Mapa", function() 
+    toast({Title="Teleporte",Body="Indo...",Color=T.G1,Duration=3}) 
 end)
 
-local cCoin2=card(pCoin,"Right","Status")
-addInfo(cCoin2,pCoin,"Moedas no Banco","0")
+-- Preenche a aba Alvo (Exemplo com botões GO/STOP desenhados)
+local pAlvo = pages["Alvo"]
+local cAlvo = card(pAlvo, "Left", "Ações")
+controlRow(cAlvo, pAlvo, "GO", "STOP", 
+    function() toast({Title="GO",Body="Iniciando...",Color=T.Green,Duration=3}) end, 
+    function() toast({Title="STOP",Body="Parado.",Color=T.Red,Duration=3}) end
+)
+
 local open=false
 local function setOpen(v)
 	open=v
@@ -274,7 +300,6 @@ minBtn.Activated:Connect(function() setOpen(false) end)
 draggable(header,root)
 tabs["Alvo"].Select()
 
--- ============ INTRO / LOADING / GATE ============
 local function runIntro()
 	fab.Visible=false
 	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
