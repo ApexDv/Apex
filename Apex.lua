@@ -148,8 +148,6 @@ local function iconLag(ic)
 	local x2=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x2,"pill")
 	return function(c) for _,ch in ipairs(ic:GetChildren()) do if ch:IsA("Frame") then ch.BackgroundColor3=c end end end
 end
-
--- Componentes do Menu (Cards, Botões, Toggles)
 local function newPage(name)
 	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
 		ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
@@ -329,8 +327,8 @@ local function addTab(name,subtitle,icon)
 		end
 	end
 	b.Activated:Connect(tabs[name].Select); return page
-	local CurrentTween = nil
-local ActiveChams = {}
+end
+local CurrentTween = nil
 local SilentAimConnection = nil
 
 local function EquipTool(toolName)
@@ -377,11 +375,10 @@ local function GetMapContainer(containerType)
     return nil
 end
 
--- ============ ABA ALVO (Farm e Teleportes) ============
+-- ============ ABA ALVO ============
 local pAlvo=addTab("Alvo","Farm e Teleportes",iconTarget)
 local cA=card(pAlvo,"Left","Auto Farm")
 local isAutoFarm = false
-
 addToggle(cA,pAlvo,"Ativar AutoFarm",false,function(on)
     isAutoFarm = on
     task.spawn(function()
@@ -395,8 +392,7 @@ addToggle(cA,pAlvo,"Ativar AutoFarm",false,function(on)
                     for _, coin in ipairs(container:GetChildren()) do
                         if coin.Name == "Coin_Server" and not coin:GetAttribute("Collected") and coin:FindFirstChild("CoinVisual") then
                             local targetCF = CFrame.new(coin.CoinVisual.Position.X, coin.CoinVisual.Position.Y + 1.5, coin.CoinVisual.Position.Z)
-                            MoveToCFrame(targetCF, 1000)
-                            break
+                            MoveToCFrame(targetCF, 1000); break
                         end
                     end
                 end
@@ -408,29 +404,23 @@ end)
 local cB=card(pAlvo,"Right","Teleportes")
 addButton(cB,pAlvo,"Ir para o Mapa",function()
     local spawns = GetMapContainer("Spawns")
-    if spawns then
-        for _, desc in ipairs(spawns:GetDescendants()) do
-            if desc:IsA("BasePart") then MoveToCFrame(desc.CFrame * CFrame.new(0, 5, 0), 5000); break end
-        end
-    end
+    if spawns then for _, desc in ipairs(spawns:GetDescendants()) do if desc:IsA("BasePart") then MoveToCFrame(desc.CFrame * CFrame.new(0, 5, 0), 5000); break end end end
 end)
 addButton(cB,pAlvo,"Ir para o Lobby",function()
     for _, obj in ipairs(Workspace:GetChildren()) do
         if (obj:IsA("Model") or obj:IsA("Folder")) and string.find(string.lower(obj.Name), "lobby") then
-            for _, desc in ipairs(obj:GetDescendants()) do
-                if desc:IsA("SpawnLocation") then MoveToCFrame(CFrame.new(desc.Position + Vector3.new(0, 5, 0)), 5000); return end
-            end
+            for _, desc in ipairs(obj:GetDescendants()) do if desc:IsA("SpawnLocation") then MoveToCFrame(CFrame.new(desc.Position + Vector3.new(0, 5, 0)), 5000); return end end
         end
     end
 end)
 
--- ============ ABA AUTO (Assassino e Xerife) ============
+-- ============ ABA AUTO ============
 local pAuto=addTab("Auto","Funções de Role",iconAuto)
 local cC=card(pAuto,"Left","Xerife")
-addToggle(cC,pAuto,"Silent Aim (Auto Atirar)",false,function(on)
+addToggle(cC,pAuto,"Silent Aim",false,function(on)
     if on then
         task.spawn(function()
-            while true do
+            while on do
                 task.wait()
                 local char = lp.Character
                 local gun = char and char:FindFirstChild("Gun")
@@ -440,16 +430,12 @@ addToggle(cC,pAuto,"Silent Aim (Auto Atirar)",false,function(on)
                         local murdererName = FindPlayerHolding("Knife")
                         local murdererPlayer = murdererName and Players:FindFirstChild(murdererName)
                         local murdererRoot = murdererPlayer and murdererPlayer.Character and murdererPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if murdererRoot and gun:FindFirstChild("Shoot") then
-                            gun.Shoot:FireServer("Shoot", murdererRoot.CFrame)
-                        end
+                        if murdererRoot and gun:FindFirstChild("Shoot") then gun.Shoot:FireServer("Shoot", murdererRoot.CFrame) end
                     end)
                 elseif not gun and SilentAimConnection then
                     SilentAimConnection:Disconnect(); SilentAimConnection = nil
                 end
-                if not on and SilentAimConnection then
-                    SilentAimConnection:Disconnect(); SilentAimConnection = nil; break
-                end
+                if not on and SilentAimConnection then SilentAimConnection:Disconnect(); SilentAimConnection = nil; break end
             end
         end)
     end
@@ -481,7 +467,7 @@ addToggle(cD,pAuto,"Kill Aura",false,function(on)
     end)
 end)
 
--- ============ ABA VELOCIDADE (Player) ============
+-- ============ ABA VELOCIDADE ============
 local pSpeed=addTab("Velocidade","Ajustes do jogador",iconSpeed)
 local cS=card(pSpeed,"Left","Físico")
 local isSpeed = false
@@ -499,7 +485,7 @@ task.spawn(function()
     end
 end)
 
--- ============ ABA ANTI-LAG (Visual) ============
+-- ============ ABA ANTI-LAG ============
 local pLag=addTab("Anti-Lag","Visuais e Otimização",iconLag)
 local cL=card(pLag,"Left","Chams (ESP)")
 local isChams = false
@@ -531,18 +517,14 @@ addToggle(cL,pLag,"Ativar Chams",false,function(on)
     end)
 end)
 
-addButton(cL,pLag,"Desligar Renderização 3D",function()
-    RunService:Set3dRenderingEnabled(false)
-end)
-addButton(cL,pLag,"Ligar Renderização 3D",function()
-    RunService:Set3dRenderingEnabled(true)
-end)
+addButton(cL,pLag,"Desligar Renderização 3D",function() RunService:Set3dRenderingEnabled(false) end)
+addButton(cL,pLag,"Ligar Renderização 3D",function() RunService:Set3dRenderingEnabled(true) end)
 
 -- ============ ABA CONFIG ============
 local pCfg=addTab("Config","Ajustes do painel",iconGear)
 local cG=card(pCfg,"Left","Painel")
 addButton(cG,pCfg,"Fechar e remover painel",function() gui:Destroy() end)
-	local function runIntro()
+local function runIntro()
 	fab.Visible=false
 	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
 	local sg=gradient(splash,ColorSequence.new(Color3.fromRGB(0,0,0),Color3.fromRGB(5,18,42)),90)
@@ -649,8 +631,9 @@ local function runGate()
 	input:GetPropertyChangedSignal("Text"):Connect(function()
 		if (input.Text:gsub("%s+","")):lower() == KEY then checkKey() end
 	end)
-	end
-	local open=false
+end
+
+local open=false
 local function setOpen(v)
 	open=v
 	if v then
@@ -676,6 +659,5 @@ minBtn.Activated:Connect(function() setOpen(false) end)
 draggable(header,root)
 tabs["Alvo"].Select()
 
--- Inicia o fluxo
 runGate()
 print("APEX HUB MM2 carregado!")
