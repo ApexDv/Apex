@@ -951,7 +951,409 @@ local function onSuccess()
 			Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 1, -28),
 			BackgroundTransparency = 1, Text = "", Parent = row,
 		})
+			X, 0, 1)
+			local v = math.floor(min + (max - min) * a + 0.5)
+			fill.Size = UDim2.fromScale(a, 1)
+			valueLabel.Text = tostring(v)
+			if v ~= last then last = v; callback(v) end
+		end
+		hit.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				tween(knob, 0.15, { Size = UDim2.fromOffset(20, 20) }, Enum.EasingStyle.Back)
+				update(input.Position.X)
+				input.Changed:Connect(function()
+					if input.UserInputState == Enum.UserInputState.End then
+						dragging = false
+						tween(knob, 0.2, { Size = UDim2.fromOffset(16, 16) }, Enum.EasingStyle.Back)
+					end
+				end)
+			end
+		end)
+		UserInputService.InputChanged:Connect(function(input)
+			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				update(input.Position.X)
+			end
+		end)
+	end
 
-		local dragging, last = false, default
-		local function update(x)
-			local a = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.
+	local function selectTab(tab)
+		if currentTab == tab then return end
+		currentTab = tab
+		for _, t in ipairs(tabs) do
+			local active = t == tab
+			tintIcon(t.icon, active and theme.Light or C.Sub, 0.3)
+			if not active then t.page.Visible = false end
+		end
+		pageTitle.Text = tab.title
+		pageSub.Text = tab.subtitle
+		pageTitle.TextTransparency, pageSub.TextTransparency = 1, 1
+		tween(pageTitle, 0.4, { TextTransparency = 0 })
+		tween(pageSub, 0.4, { TextTransparency = 0 })
+		tab.page.GroupTransparency = 1
+		tab.page.Position = UDim2.fromOffset(0, 66)
+		tab.page.Visible = true
+		tween(tab.page, 0.4, { GroupTransparency = 0, Position = UDim2.fromOffset(0, 52) })
+		local y = 8 + (tab.index - 1) * 42 - 2
+		if not ring.Visible then
+			ring.Position = UDim2.fromOffset(4, y)
+			ring.Visible = true
+		else
+			tween(ring, 0.4, { Position = UDim2.fromOffset(4, y) }, Enum.EasingStyle.Back)
+		end
+	end
+
+	local function newTab(iconName, title, subtitle)
+		local index = #tabs + 1
+		local button = create("TextButton", {
+			Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(6, 8 + (index - 1) * 42),
+			BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 2, Parent = sidebar,
+		})
+		local icon = newIcon(iconName, 20, C.Sub)
+		placeIcon(icon, button)
+		local page = create("CanvasGroup", {
+			Size = UDim2.new(1, 0, 1, -52), Position = UDim2.fromOffset(0, 52),
+			BackgroundTransparency = 1, Visible = false, Parent = content,
+		})
+		local scroll = create("ScrollingFrame", {
+			Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0,
+			ScrollBarThickness = 3, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			Parent = page,
+		}, {
+			create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+			create("UIPadding", {
+				PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 12),
+				PaddingRight = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12),
+			}),
+		})
+		paint(scroll, "ScrollBarImageColor3", "Accent")
+		local tab = { button = button, icon = icon, page = page, scroll = scroll, index = index, title = title, subtitle = subtitle }
+		table.insert(tabs, tab)
+		button.MouseButton1Click:Connect(function()
+			selectTab(tab)
+			icon.scale.Scale = icon.base * 0.7
+			tween(icon.scale, 0.35, { Scale = icon.base }, Enum.EasingStyle.Back)
+		end)
+		return tab
+	end
+
+	bindTheme(function(a, l, instant)
+		if currentTab then tintIcon(currentTab.icon, l, (not instant) and 0.4 or nil) end
+	end)
+
+	-- ABAS
+	local tHome = newTab("target", "Início", "Bem-vindo de volta")
+	local tMain = newTab("chevrons", "Principal", "Escolha o modo e ajuste as opções")
+	local tExtra = newTab("list", "Extras", "Recursos adicionais")
+	local tVisual = newTab("signal", "Visual", "Personalize a aparência")
+	local tConfig = newTab("gear", "Config", "Ajustes da interface")
+
+	-- Início
+	do
+		local card = create("Frame", {
+			Size = UDim2.new(1, 0, 0, 78), BackgroundColor3 = C.White, Parent = tHome.scroll,
+		}, { corner(12) })
+		local cardGrad = create("UIGradient", { Rotation = 20, Parent = card })
+		themedGradient(cardGrad, function(a, l)
+			return ColorSequence.new(a:Lerp(C.Bg, 0.35), a:Lerp(C.Bg, 0.75))
+		end)
+		local cardStroke = create("UIStroke", { Thickness = 1, Transparency = 0.4, Parent = card })
+		paint(cardStroke, "Color", "Light")
+		local av = create("ImageLabel", {
+			Size = UDim2.fromOffset(54, 54), Position = UDim2.fromOffset(12, 12),
+			BackgroundColor3 = C.Element, Parent = card,
+		}, { corner(27) })
+		local avStroke = create("UIStroke", { Thickness = 2, Parent = av })
+		paint(avStroke, "Color", "Light")
+		loadAvatar(av)
+		label({
+			Size = UDim2.new(1, -84, 0, 24), Position = UDim2.fromOffset(76, 16),
+			Text = "Olá, " .. player.DisplayName, Font = Enum.Font.GothamBold, TextSize = 15,
+			TextXAlignment = Enum.TextXAlignment.Left, Parent = card,
+		})
+		label({
+			Size = UDim2.new(1, -84, 0, 18), Position = UDim2.fromOffset(76, 40),
+			Text = "Bem-vindo ao " .. NAME, TextColor3 = C.Sub, TextSize = 12,
+			TextXAlignment = Enum.TextXAlignment.Left, Parent = card,
+		})
+	end
+
+	local statValues = {}
+	do
+		local rowFrame = create("Frame", { Size = UDim2.new(1, 0, 0, 64), BackgroundTransparency = 1, Parent = tHome.scroll }, {
+			create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }),
+		})
+		local function statCard(name)
+			local c = create("Frame", {
+				Size = UDim2.new(1 / 3, -6, 1, 0), BackgroundColor3 = C.Element,
+				BackgroundTransparency = ROW_TRANSPARENCY, Parent = rowFrame,
+			}, { corner(10) })
+			local v = label({
+				Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 8),
+				Text = "--", Font = Enum.Font.GothamBlack, TextSize = 20, Parent = c,
+			})
+			paint(v, "TextColor3", "Light")
+			label({
+				Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 38),
+				Text = name, TextColor3 = C.Sub, TextSize = 11, Parent = c,
+			})
+			return v
+		end
+		statValues.fps = statCard("FPS")
+		statValues.ping = statCard("Ping (ms)")
+		statValues.time = statCard("Sessão")
+	end
+
+	addSection(tHome.scroll, "Dicas")
+	addInfo(tHome.scroll, "Toque nos ícones da barra lateral para trocar de aba. Arraste a barra do topo para mover a janela e use o botão A para abrir ou fechar.", 46)
+
+	-- Principal
+	addSection(tMain.scroll, "Controle")
+	addSelector(tMain.scroll, "Modo", { "Modo A", "Modo B", "Modo C" }, function(v) print("Modo:", v) end)
+	addToggle(tMain.scroll, "Opção 1", true, function(v) print("Opção 1:", v) end)
+	addToggle(tMain.scroll, "Opção 2", false, function(v) print("Opção 2:", v) end)
+	addSlider(tMain.scroll, "Velocidade", 1, 100, 50, function(v) print("Velocidade:", v) end)
+	addSection(tMain.scroll, "Ações")
+	addButton(tMain.scroll, "Iniciar", "GO", function()
+		setStatus("Rodando", C.Green)
+		notify("check", NAME, "Ação iniciada")
+	end, C.Green)
+	addButton(tMain.scroll, "Parar", "STOP", function()
+		setStatus("Idle", C.Sub)
+		notify("stop", NAME, "Ação parada")
+	end, C.Red)
+
+	-- Extras
+	addSection(tExtra.scroll, "Recursos")
+	addToggle(tExtra.scroll, "Extra 1", false, function(v) print("Extra 1:", v) end)
+	addToggle(tExtra.scroll, "Extra 2", false, function(v) print("Extra 2:", v) end)
+	addToggle(tExtra.scroll, "Extra 3", true, function(v) print("Extra 3:", v) end)
+	addSlider(tExtra.scroll, "Intensidade", 0, 10, 5, function(v) print("Intensidade:", v) end)
+	addButton(tExtra.scroll, "Executar", "Rodar", function()
+		notify("check", NAME, "Executado com sucesso")
+	end)
+
+	-- Visual
+	addSection(tVisual.scroll, "Aparência")
+	addSelector(tVisual.scroll, "Tema", { "Azul", "Ciano", "Roxo", "Rosa" }, function(v)
+		setAccent(v)
+		notify("info", "Tema alterado", v)
+	end)
+	addToggle(tVisual.scroll, "Partículas", true, function(v)
+		particlesEnabled = v
+		fx.Visible = v
+	end)
+	addToggle(tVisual.scroll, "Borda animada", true, function(v)
+		for _, s in ipairs(spinners) do
+			if s.grad == pStrokeGrad then s.paused = not v end
+		end
+	end)
+	addSlider(tVisual.scroll, "Opacidade da janela", 30, 100, math.floor((1 - WTR) * 100 + 0.5), function(v)
+		tween(mainPanel, 0.2, { BackgroundTransparency = 1 - v / 100 })
+	end)
+
+	-- Config
+	addSection(tConfig.scroll, "Interface")
+	addToggle(tConfig.scroll, "Notificações", true, function(v) notificationsOn = v end)
+	addSelector(tConfig.scroll, "Tecla (PC)", { "RightShift", "RightCtrl", "Insert" }, function(v)
+		TOGGLE_KEY = Enum.KeyCode[v]
+	end)
+	addButton(tConfig.scroll, "Testar notificação", "Testar", function()
+		notify("info", NAME, "Notificação de exemplo")
+	end)
+	addInfo(tConfig.scroll, "Esta é apenas a interface. Conecte seus próprios callbacks nos elementos.", 34)
+
+	-- busca
+	searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local q = searchBox.Text:lower()
+		for _, e in ipairs(elements) do
+			e.row.Visible = q == "" or e.name:find(q, 1, true) ~= nil
+		end
+	end)
+
+	-- abrir/fechar
+	local visible = false
+	local setVisible
+
+	local floatBtn = create("TextButton", {
+		Name = "ApexToggle", Size = UDim2.fromOffset(48, 48),
+		Position = UDim2.new(0, 14, 0.5, -24), BackgroundColor3 = C.White,
+		Text = "A", TextColor3 = C.White, Font = Enum.Font.GothamBlack, TextSize = 21,
+		AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = guiPanel,
+	}, { corner(24) })
+	local floatGrad = create("UIGradient", { Rotation = 45, Parent = floatBtn })
+	themedGradient(floatGrad, diagBuild)
+	spin(floatGrad, 90)
+	local floatStroke = create("UIStroke", { Thickness = 2, Transparency = 0.3, Parent = floatBtn })
+	paint(floatStroke, "Color", "Light")
+
+	local pulse = create("Frame", {
+		AnchorPoint = ANCHOR, Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(48, 48),
+		BackgroundTransparency = 1, ZIndex = 49, Parent = floatBtn,
+	}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local pulseStroke = create("UIStroke", { Thickness = 2, Parent = pulse })
+	paint(pulseStroke, "Color", "Light")
+	task.spawn(function()
+		while guiPanel.Parent do
+			pulse.Size = UDim2.fromOffset(48, 48)
+			pulseStroke.Transparency = 0.2
+			tween(pulse, 1.4, { Size = UDim2.fromOffset(74, 74) })
+			tween(pulseStroke, 1.4, { Transparency = 1 }).Completed:Wait()
+			task.wait(0.6)
+		end
+	end)
+
+	makeDraggable(floatBtn, floatBtn, function()
+		floatBtn.Size = UDim2.fromOffset(40, 40)
+		tween(floatBtn, 0.35, { Size = UDim2.fromOffset(48, 48) }, Enum.EasingStyle.Back)
+		setVisible(not visible)
+	end)
+
+	setVisible = function(v)
+		visible = v
+		if v then
+			mainPanel.Visible = true
+			tween(mainPanel, 0.55, { GroupTransparency = 0 })
+			tween(pScale, 0.55, { Scale = baseSc() }, Enum.EasingStyle.Back)
+		else
+			tween(pScale, 0.3, { Scale = baseSc() * 0.85 })
+			tween(mainPanel, 0.3, { GroupTransparency = 1 }).Completed:Connect(function()
+				if not visible then mainPanel.Visible = false end
+			end)
+		end
+	end
+
+	closeBtn.MouseButton1Click:Connect(function()
+		setVisible(false)
+		notify("info", NAME, "Toque no botão A para abrir")
+	end)
+
+	local minimized = false
+	minimizeBtn.MouseButton1Click:Connect(function()
+		minimized = not minimized
+		tween(mainPanel, 0.45, { Size = minimized and UDim2.fromOffset(560, HDR) or FULL }, Enum.EasingStyle.Quart)
+	end)
+
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == TOGGLE_KEY then
+			setVisible(not visible)
+		end
+	end)
+
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		if visible then pScale.Scale = baseSc() end
+	end)
+
+	makeDraggable(header, mainPanel)
+
+	-- loop de animação
+	local startTime = os.clock()
+	local frames, acc = 0, 0
+	local conn = RunService.Heartbeat:Connect(function(dt)
+		local t = os.clock()
+		for _, s in ipairs(spinners) do
+			if not s.paused then s.grad.Rotation = (t * s.speed) % 360 end
+		end
+		lineGrad2.Offset = Vector2.new(math.sin(t * 1.5) * 0.6, 0)
+		titleGrad.Offset = Vector2.new(math.sin(t * 1.2) * 0.25, 0)
+		if particlesEnabled and mainPanel.Visible then
+			for _, p in ipairs(particles) do
+				p.y = p.y - p.speed * dt
+				if p.y < -0.08 then p.y = 1.08; p.x = math.random() end
+				p.f.Position = UDim2.fromScale(p.x + math.sin(t + p.phase) * 0.012, p.y)
+			end
+		end
+		frames += 1
+		acc += dt
+		if acc >= 0.5 then
+			local fps = math.floor(frames / acc + 0.5)
+			local ok, ping = pcall(function() return math.floor(player:GetNetworkPing() * 2000) end)
+			ping = ok and ping or 0
+			perfText.Text = fps .. " FPS · " .. ping .. "ms"
+			statValues.fps.Text = tostring(fps)
+			statValues.ping.Text = tostring(ping)
+			local secs = math.floor(t - startTime)
+			statValues.time.Text = string.format("%02d:%02d", math.floor(secs / 60), secs % 60)
+			frames, acc = 0, 0
+		end
+	end)
+	guiPanel.Destroying:Connect(function() conn:Disconnect() end)
+
+	-- splash de carregamento
+	local splash = create("CanvasGroup", {
+		Name = "Splash", Size = UDim2.fromOffset(320, 200), Position = CENTER, AnchorPoint = ANCHOR,
+		BackgroundColor3 = C.Bg, GroupTransparency = 1, ZIndex = 80, Parent = guiPanel,
+	}, { corner(18) })
+	create("UIGradient", { Color = ColorSequence.new(C.Bg2, C.Bg), Rotation = 60, Parent = splash })
+	local splashScale = create("UIScale", { Scale = math.min(baseSc(), 1) * 0.8, Parent = splash })
+	local splashStroke = create("UIStroke", { Thickness = 2, Color = C.White, Parent = splash })
+	local splashStrokeGrad = create("UIGradient", { Parent = splashStroke })
+	themedGradient(splashStrokeGrad, borderBuild)
+	spin(splashStrokeGrad, 80)
+
+	local spinRing = create("Frame", {
+		Size = UDim2.fromOffset(74, 74), Position = UDim2.new(0.5, -37, 0, 22),
+		BackgroundTransparency = 1, Parent = splash,
+	}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local spinStroke = create("UIStroke", { Thickness = 3, Color = C.White, Parent = spinRing })
+	local spinGrad = create("UIGradient", {
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.45, 0),
+			NumberSequenceKeypoint.new(0.5, 1), NumberSequenceKeypoint.new(1, 1),
+		}), Parent = spinStroke,
+	})
+	themedGradient(spinGrad, function(a, l) return ColorSequence.new(l, a) end)
+	spin(spinGrad, 360)
+
+	local splashLogo = create("Frame", {
+		Size = UDim2.fromOffset(54, 54), Position = UDim2.new(0.5, -27, 0, 32),
+		BackgroundColor3 = C.White, Parent = splash,
+	}, { corner(16) })
+	local splashLogoGrad = create("UIGradient", { Rotation = 45, Parent = splashLogo })
+	themedGradient(splashLogoGrad, diagBuild)
+	label({ Size = UDim2.fromScale(1, 1), Text = "A", Font = Enum.Font.GothamBlack, TextSize = 30, Parent = splashLogo })
+
+	local splashTitle = label({
+		Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 106),
+		Text = NAME, Font = Enum.Font.GothamBlack, TextSize = 24, TextColor3 = C.White, Parent = splash,
+	})
+	local splashTitleGrad = create("UIGradient", { Parent = splashTitle })
+	themedGradient(splashTitleGrad, function(a, l)
+		return ColorSequence.new({ ColorSequenceKeypoint.new(0, C.White), ColorSequenceKeypoint.new(1, l) })
+	end)
+
+	local splashText = label({
+		Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 140),
+		Text = "Carregando...", TextColor3 = C.Sub, TextSize = 11, Parent = splash,
+	})
+	local barTrack = create("Frame", {
+		Size = UDim2.fromOffset(220, 6), Position = UDim2.new(0.5, -110, 0, 166),
+		BackgroundColor3 = C.Element, Parent = splash,
+	}, { corner(3) })
+	local barFill = create("Frame", {
+		Size = UDim2.fromScale(0, 1), BackgroundColor3 = theme.Accent, Parent = barTrack,
+	}, { corner(3) })
+	paint(barFill, "BackgroundColor3", "Accent")
+
+	task.spawn(function()
+		tween(splash, 0.5, { GroupTransparency = 0 })
+		tween(splashScale, 0.6, { Scale = math.min(baseSc(), 1) }, Enum.EasingStyle.Back)
+		local steps = {
+			{ 0.35, "Carregando módulos..." }, { 0.70, "Preparando interface..." }, { 1.00, "Pronto!" },
+		}
+		for _, s in ipairs(steps) do
+			splashText.Text = s[2]
+			tween(barFill, 0.55, { Size = UDim2.fromScale(s[1], 1) }, Enum.EasingStyle.Quad)
+			task.wait(0.6)
+		end
+		task.wait(0.2)
+		tween(splashScale, 0.4, { Scale = math.min(baseSc(), 1) * 1.1 })
+		tween(splash, 0.4, { GroupTransparency = 1 }).Completed:Wait()
+		splash:Destroy()
+		selectTab(tHome)
+		setVisible(true)
+		floatBtn.Visible = true
+		notify("check", "Bem-vindo", NAME .. " carregado")
+	end)
+end
+-- fecha onSuccess
