@@ -87,7 +87,6 @@ local function particles(parent,n)
 	end
 end
 
--- FUNÇÃO MESTRA DO BOTÃO (Garante que o botão apareça)
 local function primary(parent,props)
 	local b=new("TextButton",props,parent)
 	b.BackgroundColor3=Color3.new(1,1,1); b.AutoButtonColor=false
@@ -394,24 +393,23 @@ local function runGate()
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
+	
 	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
 	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
 	
 	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
 	local inStroke=stroke(inWrap,T.Stroke,1.5)
 	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
+	
 	do
 		local sh=new("Frame",{Size=UDim2.fromOffset(10,12),Position=UDim2.fromOffset(19,9),BackgroundTransparency=1},inWrap)
 		corner(sh,"pill"); new("UIStroke",{Color=T.G1,Thickness=2,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},sh)
 		local bd=new("Frame",{Size=UDim2.fromOffset(16,12),Position=UDim2.fromOffset(16,20),BackgroundColor3=T.G1,BorderSizePixel=0},inWrap); corner(bd,4)
 	end
 	
-	input.Focused:Connect(function() tween(inStroke,0.2,{Color=T.G1}) end)
-	input.FocusLost:Connect(function(enter) tween(inStroke,0.2,{Color=T.Stroke}); if enter then task.defer(function() Panel._verify() end) end end)
-	
 	local msg=label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,196),Text="",Font=F.GothamBold,TextSize=12,TextXAlignment=CENTER})
 	local btn=primary(box,{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,224),Text="VERIFICAR",Font=F.GothamBlack,TextSize=14,TextColor3=T.Bg})
-	
+
 	local function successAnim(cb)
 		local flash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.G1,BackgroundTransparency=1,ZIndex=170},box)
 		corner(flash,26); tween(flash,0.15,{BackgroundTransparency=0.3}); task.wait(0.1); tween(flash,0.3,{BackgroundTransparency=1})
@@ -439,27 +437,54 @@ local function runGate()
 		tween(boxSc,0.4,{Scale=0},BACK,Enum.EasingDirection.In)
 		tween(gate,0.4,{BackgroundTransparency=1}); task.wait(0.45); gate:Destroy(); cb()
 	end
-	
-	local busy=false
-	function Panel._verify()
-		if busy then return end; busy=true
-		local txt=(input.Text:gsub("%s+","")):lower(); msg.Text=""
-		task.spawn(function()
-			for i=1,6 do btn.Text="VERIFICANDO"..string.rep(".",i%4); task.wait(0.14) end
-			if txt==KEY then
-				Panel.KeyOK=true; btn.Text="ACESSO LIBERADO"
-				msg.TextColor3=T.G1; msg.Text="Key válida! Bem-vindo."
-				tween(inStroke,0.2,{Color=T.G1}); task.wait(0.4)
-				successAnim(function() runLoading(runIntro) end)
-			else
-				btn.Text="VERIFICAR"; msg.TextColor3=T.Red; msg.Text="Key inválida. Tente novamente."
-				tween(inStroke,0.15,{Color=T.Red})
-				for _,dx in ipairs({-12,12,-9,9,-5,5,0}) do tween(box,0.05,{Position=UDim2.new(0.5,dx,0.5,0)}); task.wait(0.05) end
-				task.wait(0.3); tween(inStroke,0.3,{Color=T.Stroke}); busy=false
-			end
-		end)
+
+	local verificado = false
+
+	-- Função que confere e executa a animação
+	local function checkKey()
+		if verificado then return end
+		if (input.Text:gsub("%s+","")):lower() == KEY then
+			verificado = true
+			btn.Text = "ACESSO LIBERADO"
+			msg.TextColor3 = T.G1
+			msg.Text = "Key válida! Bem-vindo."
+			tween(inStroke,0.2,{Color=T.G1})
+			task.wait(0.4)
+			successAnim(function() runLoading(runIntro) end)
+		end
 	end
-	btn.Activated:Connect(function() Panel._verify() end)
+
+	-- Verifica sozinho no milissegundo que digitar
+	input:GetPropertyChangedSignal("Text"):Connect(function()
+		if (input.Text:gsub("%s+","")):lower() == KEY then
+			checkKey()
+		end
+	end)
+
+	-- Verifica ao apertar Enter
+	input.FocusLost:Connect(function(enter)
+		tween(inStroke,0.2,{Color=T.Stroke})
+		if enter then
+			if not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY and input.Text ~= "" then
+				msg.TextColor3 = T.Red
+				msg.Text = "Key inválida. Tente novamente."
+				tween(inStroke,0.15,{Color=T.Red})
+				task.wait(1)
+				tween(inStroke,0.3,{Color=T.Stroke})
+			end
+		end
+	end)
+
+	-- Verifica ao clicar no botão
+	btn.Activated:Connect(function()
+		if not verificado and (input.Text:gsub("%s+","")):lower() ~= KEY then
+			msg.TextColor3 = T.Red
+			msg.Text = "Key inválida. Tente novamente."
+			btn.Text = "VERIFICAR"
+		else
+			checkKey()
+		end
+	end)
 end
 
 runGate()
