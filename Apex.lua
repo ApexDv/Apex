@@ -415,7 +415,7 @@ local function runGate()
 	input.FocusLost:Connect(function(enter) tween(inStroke,0.2,{Color=T.Stroke}); if enter then task.defer(function() Panel._verify() end) end end)
 	local msg=label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,196),Text="",Font=F.GothamBold,TextSize=12,TextXAlignment=CENTER})
 	local btn=primary(box,{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,224),Text="VERIFICAR",Font=F.GothamBlack,TextSize=14,TextColor3=T.Bg})
-	local function successAnim(cb)
+	function successAnim(cb)
 		local flash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.G1,BackgroundTransparency=1,ZIndex=170},box)
 		corner(flash,26); tween(flash,0.15,{BackgroundTransparency=0.3}); task.wait(0.1); tween(flash,0.3,{BackgroundTransparency=1})
 		local letters={"A","P","E","X"}
