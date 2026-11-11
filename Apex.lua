@@ -337,14 +337,13 @@ FarmTab:Button({ Title = "Auto End Round (Fling)", Callback = function()
     if murdererPlayer and not IsPlayerAlive(lp) then Module:fling(murdererPlayer) end
 end})
 
--- ABA 2: TARGET (FLING CORRIGIDO)
+-- ABA 2: TARGET (FLING NO CLIQUE - CORRIGIDO)
 local TargetTab = Window:Tab({ Title = "Target", Icon = "crosshair" })
 local targetList = {}
 for _, p in ipairs(Players:GetPlayers()) do 
     if p ~= lp then table.insert(targetList, p.Name) end 
 end
 
--- Função para atualizar a lista de alvos
 local targetDropdown
 local function RefreshTargetList()
     targetList = {}
@@ -361,26 +360,23 @@ targetDropdown = TargetTab:Dropdown({
     Callback = function(val) TargetPlayerName = val end
 })
 
--- Atualiza a lista quando alguém entra ou sai do jogo
 Players.PlayerAdded:Connect(function(p) RefreshTargetList() end)
 Players.PlayerRemoving:Connect(function(p) 
     RefreshTargetList()
     if TargetPlayerName == p.Name then TargetPlayerName = nil end
 end)
 
-TargetTab:Toggle({
-    Title = "Fling Alvo",
-    Default = false,
-    Callback = function(state)
-        task.spawn(function()
-            while state do
-                task.wait(1) -- CORRIGIDO: Evita o bug de flingar sem parar e travar o jogo
-                local target = TargetPlayerName and Players:FindFirstChild(TargetPlayerName)
-                if target and target.Character then 
-                    pcall(function() Module:fling(target) end)
-                end
-            end
-        end)
+-- CORRIGIDO: Fling agora é ativado no clique e tem intervalo de segurança
+TargetTab:Button({
+    Title = "Fling Alvo (Clicar para arremessar)",
+    Callback = function()
+        local target = TargetPlayerName and Players:FindFirstChild(TargetPlayerName)
+        if target and target.Character then
+            pcall(function() Module:fling(target) end)
+            WindUI:Notify({ Title = "Fling", Content = "Arremessando: "..target.Name, Duration = 3 })
+        else
+            WindUI:Notify({ Title = "Fling", Content = "Selecione um alvo primeiro!", Duration = 3 })
+        end
     end
 })
 
@@ -424,29 +420,28 @@ TargetTab:Button({ Title = "Teleportar até Alvo", Callback = function()
     if myRoot and targetRoot then myRoot.CFrame = targetRoot.CFrame end
 end})
 
-TargetTab:Toggle({ Title = "Fling Sheriff", Default = false, Callback = function(state)
-    task.spawn(function() 
-        while state do 
-            task.wait(1) -- CORRIGIDO
-            local sName = FindPlayerHolding("Gun")
-            if sName and sName ~= lp.Name then 
-                pcall(function() Module:fling(Players:FindFirstChild(sName)) end)
-            end 
-        end 
-    end)
-end})
+-- BOTÕES DE FLING COM CLIQUE E DELAY DE 3S
+TargetTab:Button({ 
+    Title = "Fling Sheriff (Clicar)", 
+    Callback = function()
+        local sName = FindPlayerHolding("Gun")
+        if sName and sName ~= lp.Name then 
+            pcall(function() Module:fling(Players:FindFirstChild(sName)) end)
+            WindUI:Notify({ Title = "Fling", Content = "Arremessando o Sheriff!", Duration = 3 })
+        end
+    end
+})
 
-TargetTab:Toggle({ Title = "Fling Murderer", Default = false, Callback = function(state)
-    task.spawn(function() 
-        while state do 
-            task.wait(1) -- CORRIGIDO
-            local mName = FindPlayerHolding("Knife")
-            if mName and mName ~= lp.Name then 
-                pcall(function() Module:fling(Players:FindFirstChild(mName)) end)
-            end 
-        end 
-    end)
-end})
+TargetTab:Button({ 
+    Title = "Fling Murderer (Clicar)", 
+    Callback = function()
+        local mName = FindPlayerHolding("Knife")
+        if mName and mName ~= lp.Name then 
+            pcall(function() Module:fling(Players:FindFirstChild(mName)) end)
+            WindUI:Notify({ Title = "Fling", Content = "Arremessando o Assassino!", Duration = 3 })
+        end
+    end
+})
 
 -- ABA 3: ROLES (ASSASSINO E XERIFE)
 local RolesTab = Window:Tab({ Title = "Roles", Icon = "swords" })
@@ -538,7 +533,7 @@ RolesTab:Toggle({
     end
 })
 
--- ABA 4: VISUAL (CHAMS E ESP)
+-- ABA 4: VISUAL
 local VisualTab = Window:Tab({ Title = "Visual", Icon = "eye" })
 
 VisualTab:Toggle({
@@ -569,34 +564,62 @@ VisualTab:Toggle({
     Callback = function(state) RunService:Set3dRenderingEnabled(not state) end
 })
 
-VisualTab:Toggle({
-    Title = "Unbox Notification",
-    Default = false,
+-- ABA 5: PLAYER (COM CORREÇÃO NO WALKSPEED)
+local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
+local speedVal, jumpVal = 16, 50
+local speedConnection = nil
+
+PlayerTab:Toggle({ 
+    Title = "WalkSpeed", 
+    Default = false, 
     Callback = function(state)
+        if speedConnection then speedConnection:Disconnect(); speedConnection = nil end
         if state then
-            local unboxEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Shop"):WaitForChild("Unbox")
-            UnboxConnection = unboxEvent.OnClientEvent:Connect(function(item)
-                WindUI:Notify({ Title = "Unbox", Content = "Você tirou: "..tostring(item), Duration = 5 })
+            speedConnection = RunService.Heartbeat:Connect(function()
+                local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+                if h then h.WalkSpeed = speedVal end
             end)
         else
-            if UnboxConnection then UnboxConnection:Disconnect(); UnboxConnection = nil end
+            local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+            if h then h.WalkSpeed = 16 end -- CORRIGIDO: Volta ao normal quando desliga
         end
     end
 })
 
--- ABA 5: PLAYER (FÍSICA, ANTI-FLING E INVIS)
-local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
-local speedVal, jumpVal = 16, 50
+PlayerTab:Slider({ 
+    Title = "Velocidade", 
+    Value = { Min = 16, Max = 200, Default = 16 }, 
+    Callback = function(v) 
+        speedVal = v 
+        local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+        if h and speedConnection then h.WalkSpeed = v end 
+    end 
+})
 
-PlayerTab:Toggle({ Title = "WalkSpeed", Default = false, Callback = function(s)
-    task.spawn(function() while s do task.wait(); SetCharacterPhysics(speedVal, nil) end; SetCharacterPhysics(16, nil) end)
-end})
-PlayerTab:Slider({ Title = "Velocidade", Value = { Min = 16, Max = 200, Default = 16 }, Callback = function(v) speedVal = v end })
+PlayerTab:Toggle({ 
+    Title = "JumpPower", 
+    Default = false, 
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while state do
+                    task.wait()
+                    local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+                    if h then h.JumpPower = jumpVal end
+                end
+            end)
+        else
+            local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+            if h then h.JumpPower = 50 end -- CORRIGIDO
+        end
+    end
+})
 
-PlayerTab:Toggle({ Title = "JumpPower", Default = false, Callback = function(s)
-    task.spawn(function() while s do task.wait(); SetCharacterPhysics(nil, jumpVal) end; SetCharacterPhysics(nil, 50) end)
-end})
-PlayerTab:Slider({ Title = "Força do Pulo", Value = { Min = 50, Max = 200, Default = 50 }, Callback = function(v) jumpVal = v end })
+PlayerTab:Slider({ 
+    Title = "Força do Pulo", 
+    Value = { Min = 50, Max = 200, Default = 50 }, 
+    Callback = function(v) jumpVal = v end 
+})
 
 PlayerTab:Toggle({
     Title = "Anti Fling",
@@ -637,74 +660,4 @@ PlayerTab:Toggle({
             end
         end
     end
-})
-
--- ABA 6: WEBHOOK
-local WebhookTab = Window:Tab({ Title = "Webhook", Icon = "link" })
-local webhookUrl = ""
-
-WebhookTab:Input({
-    Title = "URL do Webhook",
-    Placeholder = "https://discord.com/api/webhooks/...",
-    Callback = function(text) webhookUrl = text end
-})
-
-WebhookTab:Button({
-    Title = "Enviar Teste pro Discord",
-    Callback = function()
-        if webhookUrl == "" then return end
-        local req = (syn and syn.request) or (http and http.request) or http_request or request
-        if req then
-            req({
-                Url = webhookUrl, Method = "POST",
-                Headers = { ["Content-Type"] = "application/json" },
-                Body = HttpService:JSONEncode({ content = "APEX HUB MM2 - Webhook Conectado com Sucesso!" })
-            })
-            WindUI:Notify({ Title = "Webhook", Content = "Mensagem enviada!", Duration = 3 })
-        end
-    end
-})
-
--- ABA 7: SEGURANÇA (ANTI-TRADE DA SOURCE)
-local TradeFolder = ReplicatedStorage:WaitForChild("Trade")
-local DeclineTrade = TradeFolder:WaitForChild("DeclineTrade")
-local UpdateTrade = TradeFolder:WaitForChild("UpdateTrade")
-
-DeclineTrade.AncestryChanged:Connect(function(_, parent)
-    if not parent then lp:Kick("Security Alert:\nUnauthorized trade behavior detected.") end
-end)
-
-UpdateTrade.OnClientEvent:Connect(function()
-    if not DeclineTrade.Parent then lp:Kick("Security Alert:\nUnauthorized trade behavior detected.") else
-        DeclineTrade:FireServer()
-        WindUI:Notify({ Title = "AVISO", Content = "Detectamos comércio suspeito. Declinei automaticamente.", Duration = 5 })
-    end
-end)
-
--- Loop de segurança (Safe position)
-task.spawn(function()
-    local destroyHeight = Workspace.FallenPartsDestroyHeight
-    while task.wait(0.1) do
-        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            local yPos = root.Position.Y
-            if yPos < destroyHeight or yPos > 5000 then
-                if not SafePositionTime then SafePositionTime = os.clock() end
-                if os.clock() - SafePositionTime >= 5 and LastSafePosition then
-                    root.CFrame = LastSafePosition + Vector3.new(0, 4, 0)
-                    root.AssemblyLinearVelocity = Vector3.zero
-                    root.AssemblyAngularVelocity = Vector3.zero
-                end
-            else
-                SafePositionTime = nil
-                LastSafePosition = root.CFrame
-            end
-        end
-    end
-end)
-
-WindUI:Notify({
-    Title = "APEX HUB",
-    Content = "Todas as funções do Vertex MM2 foram carregadas!",
-    Duration = 5,
 })
