@@ -331,7 +331,6 @@ loop(statusDot,0.9,{BackgroundTransparency=0.65})
 addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
 addTab("Auto",       "Escolha as raridades alvo", iconAuto)
 addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
-addTab("Survival",   "Infinite Status",         iconHeart)
 addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
 addTab("Config",     "Ajustes do painel",       iconGear)
 -- ===================== CONTEÚDO DA ABA ALVO =====================
