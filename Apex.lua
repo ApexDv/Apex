@@ -1,4 +1,3 @@
--- Carrega a Wind UI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Players = game:GetService("Players")
@@ -9,10 +8,8 @@ local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local lp = Players.LocalPlayer
 
--- Módulo de Fling da Source Original
 local Module = loadstring(game:HttpGet("https://raw.smokingscripts.org/module"))()
 
--- Cria a Janela Principal no Wind UI
 local Window = WindUI:CreateWindow({
     Title = "APEX HUB | MM2",
     Icon = "rbxassetid://10734934585",
@@ -25,9 +22,6 @@ local Window = WindUI:CreateWindow({
     HasOutline = false,
 })
 
--- ==========================================
--- VARIÁVEIS E LÓGICA DA SOURCE ORIGINAL
--- ==========================================
 local CurrentTween = nil
 local ActiveChams = {}
 local SilentAimConnection = nil
@@ -110,33 +104,6 @@ local function MoveToCFrame(targetCFrame, speed, easingStyle, waitForArrival, co
     end
 end
 
-local function ShootMurderer()
-    local murdererName = FindPlayerHolding("Knife")
-    local gun = lp.Backpack:FindFirstChild("Gun") or (lp.Character and lp.Character:FindFirstChild("Gun"))
-    if not gun or not murdererName then return end
-    local targetPlayer = Players:FindFirstChild(murdererName)
-    local targetChar = targetPlayer and targetPlayer.Character
-    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-    if targetRoot then
-        EquipTool("Gun")
-        if gun:FindFirstChild("Shoot") then gun.Shoot:FireServer("Shoot", targetRoot.CFrame) end
-    end
-end
-
-local function HasLineOfSight(targetPlayer)
-    local char = lp.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local targetChar = targetPlayer and targetPlayer.Character
-    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-    if not root or not targetRoot then return false end
-    local rayDirection = (targetRoot.Position - root.Position).Unit * 50
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = { char }
-    local result = Workspace:Raycast(root.Position, rayDirection, rayParams)
-    return not result or (result.Instance and result.Instance.Parent == targetChar)
-end
-
 local function GetNextCoin(mode)
     local container = GetMapContainer("CoinContainer")
     if not container then return nil end
@@ -177,6 +144,45 @@ local function CollectCoin(coin)
     MoveToCFrame(targetCF, 21, true, true, coin)
 end
 
+local function HasLineOfSight(targetPlayer)
+    local char = lp.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local targetChar = targetPlayer and targetPlayer.Character
+    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+    if not root or not targetRoot then return false end
+    local rayDirection = (targetRoot.Position - root.Position).Unit * 50
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = { char }
+    local result = Workspace:Raycast(root.Position, rayDirection, rayParams)
+    return not result or (result.Instance and result.Instance.Parent == targetChar)
+end
+
+local function ShootMurderer()
+    local murdererName = FindPlayerHolding("Knife")
+    local gun = lp.Backpack:FindFirstChild("Gun") or (lp.Character and lp.Character:FindFirstChild("Gun"))
+    if not gun or not murdererName then return end
+    local targetPlayer = Players:FindFirstChild(murdererName)
+    local targetRoot = targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if targetRoot then
+        EquipTool("Gun")
+        if gun:FindFirstChild("Shoot") then gun.Shoot:FireServer("Shoot", targetRoot.CFrame) end
+    end
+end
+
+local function KillAll()
+    EquipTool("Knife")
+    local knife = lp.Backpack:FindFirstChild("Knife") or (lp.Character and lp.Character:FindFirstChild("Knife"))
+    if not knife then return end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= lp and player.Character then
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            if targetRoot and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("HandleTouched") then
+                knife.Events.HandleTouched:FireServer(targetRoot)
+            end
+        end
+    end
+end
 local function UpdatePlayerChams()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= lp then
@@ -252,25 +258,6 @@ local function TeleportToMap()
         end
     end
 end
-
-local function KillAll()
-    EquipTool("Knife")
-    local knife = lp.Backpack:FindFirstChild("Knife") or (lp.Character and lp.Character:FindFirstChild("Knife"))
-    if not knife then return end
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= lp and player.Character then
-            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
-            if targetRoot and knife:FindFirstChild("Events") and knife.Events:FindFirstChild("HandleTouched") then
-                knife.Events.HandleTouched:FireServer(targetRoot)
-            end
-        end
-    end
-end
-
--- ==========================================
--- CRIAÇÃO DAS ABAS E BOTÕES NA WIND UI
--- ==========================================
-
 -- ABA 1: FARM
 local FarmTab = Window:Tab({ Title = "Main / Farm", Icon = "home" })
 local isAutoFarm = false
@@ -350,17 +337,36 @@ FarmTab:Button({ Title = "Auto End Round (Fling)", Callback = function()
     if murdererPlayer and not IsPlayerAlive(lp) then Module:fling(murdererPlayer) end
 end})
 
--- ABA 2: TARGET (FLING)
+-- ABA 2: TARGET (FLING CORRIGIDO)
 local TargetTab = Window:Tab({ Title = "Target", Icon = "crosshair" })
 local targetList = {}
-for _, p in ipairs(Players:GetPlayers()) do if p ~= lp then table.insert(targetList, p.Name) end end
+for _, p in ipairs(Players:GetPlayers()) do 
+    if p ~= lp then table.insert(targetList, p.Name) end 
+end
 
-TargetTab:Dropdown({
+-- Função para atualizar a lista de alvos
+local targetDropdown
+local function RefreshTargetList()
+    targetList = {}
+    for _, p in ipairs(Players:GetPlayers()) do 
+        if p ~= lp then table.insert(targetList, p.Name) end 
+    end
+    if targetDropdown then targetDropdown:Refresh(targetList) end
+end
+
+targetDropdown = TargetTab:Dropdown({
     Title = "Escolher Alvo",
     Values = targetList,
-    Default = "",
+    Default = nil,
     Callback = function(val) TargetPlayerName = val end
 })
+
+-- Atualiza a lista quando alguém entra ou sai do jogo
+Players.PlayerAdded:Connect(function(p) RefreshTargetList() end)
+Players.PlayerRemoving:Connect(function(p) 
+    RefreshTargetList()
+    if TargetPlayerName == p.Name then TargetPlayerName = nil end
+end)
 
 TargetTab:Toggle({
     Title = "Fling Alvo",
@@ -368,9 +374,11 @@ TargetTab:Toggle({
     Callback = function(state)
         task.spawn(function()
             while state do
-                task.wait()
+                task.wait(1) -- CORRIGIDO: Evita o bug de flingar sem parar e travar o jogo
                 local target = TargetPlayerName and Players:FindFirstChild(TargetPlayerName)
-                if target then Module:fling(target); task.wait(3) end
+                if target and target.Character then 
+                    pcall(function() Module:fling(target) end)
+                end
             end
         end)
     end
@@ -417,11 +425,27 @@ TargetTab:Button({ Title = "Teleportar até Alvo", Callback = function()
 end})
 
 TargetTab:Toggle({ Title = "Fling Sheriff", Default = false, Callback = function(state)
-    task.spawn(function() while state do task.wait(); local sName = FindPlayerHolding("Gun"); if sName and sName ~= lp.Name then Module:fling(Players:FindFirstChild(sName)); task.wait(3) end end end)
+    task.spawn(function() 
+        while state do 
+            task.wait(1) -- CORRIGIDO
+            local sName = FindPlayerHolding("Gun")
+            if sName and sName ~= lp.Name then 
+                pcall(function() Module:fling(Players:FindFirstChild(sName)) end)
+            end 
+        end 
+    end)
 end})
 
 TargetTab:Toggle({ Title = "Fling Murderer", Default = false, Callback = function(state)
-    task.spawn(function() while state do task.wait(); local mName = FindPlayerHolding("Knife"); if mName and mName ~= lp.Name then Module:fling(Players:FindFirstChild(mName)); task.wait(3) end end end)
+    task.spawn(function() 
+        while state do 
+            task.wait(1) -- CORRIGIDO
+            local mName = FindPlayerHolding("Knife")
+            if mName and mName ~= lp.Name then 
+                pcall(function() Module:fling(Players:FindFirstChild(mName)) end)
+            end 
+        end 
+    end)
 end})
 
 -- ABA 3: ROLES (ASSASSINO E XERIFE)
@@ -437,7 +461,7 @@ RolesTab:Toggle({
                 while state do
                     task.wait()
                     local gun = lp.Character and lp.Character:FindFirstChild("Gun")
-                    if gun and FindPlayerHolding("Gun") == lp.Name and not SilentAimConnection then
+                    if gun and not SilentAimConnection then
                         SilentAimConnection = gun.Activated:Connect(function()
                             local mName = FindPlayerHolding("Knife")
                             local mPlayer = mName and Players:FindFirstChild(mName)
@@ -458,10 +482,10 @@ RolesTab:Toggle({
     Callback = function(state)
         task.spawn(function()
             while state do
-                task.wait()
+                task.wait(0.1)
                 local mName = FindPlayerHolding("Knife")
                 local mPlayer = mName and Players:FindFirstChild(mName)
-                if mPlayer and FindPlayerHolding("Gun") == lp.Name and HasLineOfSight(mPlayer) then
+                if mPlayer and lp.Character and lp.Character:FindFirstChild("Gun") and HasLineOfSight(mPlayer) then
                     EquipTool("Gun"); ShootMurderer()
                 end
             end
@@ -490,7 +514,7 @@ RolesTab:Toggle({
                     for _, player in ipairs(Players:GetPlayers()) do
                         if player ~= lp and player.Character and IsPlayerAlive(player) then
                             local tRoot = player.Character:FindFirstChild("HumanoidRootPart")
-                                                        if tRoot and (tRoot.Position - root.Position).Magnitude <= auraDist then
+                            if tRoot and (tRoot.Position - root.Position).Magnitude <= auraDist then
                                 if knife and knife:FindFirstChild("Events") then knife.Events.HandleTouched:FireServer(tRoot) end
                             end
                         end
@@ -505,7 +529,12 @@ RolesTab:Toggle({
     Title = "Kill All (Assassino)",
     Default = false,
     Callback = function(state)
-        task.spawn(function() while state do task.wait(); if FindPlayerHolding("Knife") == lp.Name then KillAll() end end end)
+        task.spawn(function() 
+            while state do 
+                task.wait(0.5)
+                if FindPlayerHolding("Knife") == lp.Name then KillAll() end 
+            end 
+        end)
     end
 })
 
@@ -555,7 +584,7 @@ VisualTab:Toggle({
     end
 })
 
--- ABA 5: PLAYER (FÍSICA E ANTI-FLING)
+-- ABA 5: PLAYER (FÍSICA, ANTI-FLING E INVIS)
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 local speedVal, jumpVal = 16, 50
 
@@ -674,7 +703,6 @@ task.spawn(function()
     end
 end)
 
--- Notificação de carregamento
 WindUI:Notify({
     Title = "APEX HUB",
     Content = "Todas as funções do Vertex MM2 foram carregadas!",
