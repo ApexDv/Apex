@@ -63,6 +63,8 @@ local function draggable(handle,target)
 		end
 	end)
 end
+local ord=setmetatable({},{__index=function() return 0 end})
+local function nxt(parent) ord[parent]=ord[parent]+1; return ord[parent] end
 local spinners={}
 local function spin(g,speed) spinners[#spinners+1]={g,speed}; return g end
 local particleList={}
@@ -85,6 +87,71 @@ local function particles(parent,n)
 	end
 end
 
+-- ÍCONES DAS ABAS
+local function chev(parent,tx,ty,dir,col,L,th)
+	L=L or 8; th=th or 2.5; local d=L/2*0.7071; local bars={}
+	local function bar(cx,cy,rot)
+		local b=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromOffset(cx,cy),
+			Size=UDim2.fromOffset(L,th),Rotation=rot,BackgroundColor3=col,BorderSizePixel=0},parent)
+		corner(b,"pill"); bars[#bars+1]=b
+	end
+	if dir=="right" then bar(tx-d,ty-d,45); bar(tx-d,ty+d,-45)
+	else bar(tx-d,ty-d,45); bar(tx+d,ty-d,-45) end
+	return bars
+end
+local function iconTarget(ic)
+	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(20,20),BackgroundTransparency=1},ic)
+	corner(ring,"pill")
+	local rs=new("UIStroke",{Thickness=2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},ring)
+	local dot=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(7,7),BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+	corner(dot,"pill")
+	return function(c) rs.Color=c; dot.BackgroundColor3=c end
+end
+local function iconAuto(ic)
+	local a=chev(ic,26,20,"right",T.Sub,9,2.6); local b=chev(ic,18,20,"right",T.Sub,9,2.6)
+	return function(c) for _,x in ipairs(a) do x.BackgroundColor3=c end; for _,x in ipairs(b) do x.BackgroundColor3=c end end
+end
+local function iconSpeed(ic)
+	local bars={}
+	for i,w in ipairs({18,13,8}) do
+		local b=new("Frame",{Size=UDim2.fromOffset(w,3),Position=UDim2.fromOffset(11,12+(i-1)*6),BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+		corner(b,"pill"); bars[i]=b
+	end
+	return function(c) for _,b in ipairs(bars) do b.BackgroundColor3=c end end
+end
+local function iconGear(ic)
+	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(12,12),BackgroundTransparency=1},ic)
+	corner(ring,"pill")
+	local rs=new("UIStroke",{Thickness=2.2,Color=T.Sub,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},ring)
+	local teeth={}
+	for i=0,7 do
+		local a=math.rad(i*45)
+		local t=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,math.sin(a)*9,0.5,-math.cos(a)*9),Size=UDim2.fromOffset(4,4),Rotation=i*45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+		corner(t,1); teeth[#teeth+1]=t
+	end
+	return function(c) rs.Color=c; for _,t in ipairs(teeth) do t.BackgroundColor3=c end end
+end
+local function iconLag(ic)
+	for i=1,3 do
+		local b=new("Frame",{Size=UDim2.fromOffset(5,6+i*4),Position=UDim2.fromOffset(6+(i-1)*8,24-i*4),BackgroundColor3=T.Sub,BorderSizePixel=0},ic)
+		corner(b,2)
+	end
+	local x1=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x1,"pill")
+	local x2=new("Frame",{Size=UDim2.fromOffset(10,2.5),Position=UDim2.fromOffset(27,10),Rotation=-45,BackgroundColor3=T.Sub,BorderSizePixel=0},ic); corner(x2,"pill")
+	return function(c) for _,ch in ipairs(ic:GetChildren()) do if ch:IsA("Frame") then ch.BackgroundColor3=c end end end
+end
+-- Novo ícone da aba Survival (Coração)
+local function iconHeart(ic)
+	local left = new("Frame", {Size=UDim2.fromOffset(11, 15), Position = UDim2.fromOffset(7, 8), Rotation = -45, BackgroundColor3 = T.Sub, BorderSizePixel = 0}, ic)
+	corner(left, "pill")
+	local right = new("Frame", {Size=UDim2.fromOffset(11, 15), Position = UDim2.fromOffset(18, 8), Rotation = 45, BackgroundColor3 = T.Sub, BorderSizePixel = 0}, ic)
+	corner(right, "pill")
+	return function(c)
+		left.BackgroundColor3 = c
+		right.BackgroundColor3 = c
+	end
+end
+
 local parentGui=(gethui and gethui()) or CoreGui
 local old=parentGui:FindFirstChild("APEXHub"); if old then old:Destroy() end
 local gui=new("ScreenGui",{Name="APEXHub",ResetOnSpawn=false,DisplayOrder=100,
@@ -96,9 +163,8 @@ spinConn=RunService.RenderStepped:Connect(function(dt)
 	for _,s in ipairs(spinners) do s[1].Rotation=(s[1].Rotation+s[2]*dt)%360 end
 end)
 
--- FAB (botão flutuante)
 local fab=new("TextButton",{Size=UDim2.fromOffset(52,52),Position=UDim2.new(0,16,0.5,-26),
-	BackgroundColor3=Color3.fromRGB(8,14,10),Text="",AutoButtonColor=false,Visible=false},gui)
+	BackgroundColor3=Color3.fromRGB(8,14,10),Text="",AutoButtonColor=false},gui)
 corner(fab,"pill")
 spin(gradient(fab,ACCENT,45),70)
 local fabStroke=stroke(fab,T.G1,2,0.4)
@@ -112,13 +178,324 @@ task.spawn(function()
 	pcall(function() fabAvatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end)
 end)
 
+local toastLayer=new("Frame",{AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,60),
+	Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,BackgroundTransparency=1,ZIndex=70},gui)
+new("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder,
+	HorizontalAlignment=Enum.HorizontalAlignment.Right},toastLayer)
+
+local toastCount=0
+local ICONS={success="✓",info="i",warn="!",error="✕"}
+
+local function toast(opts)
+	toastCount+=1
+	local dur    = opts.Duration or 5
+	local col    = opts.Color    or T.G1
+	local title  = opts.Title    or ""
+	local body   = opts.Body     or ""
+	local icon   = opts.Icon     or "i"
+	local lo     = toastCount
+
+	local holder=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
+		BackgroundTransparency=1,LayoutOrder=lo},toastLayer)
+	local card=new("Frame",{Size=UDim2.fromOffset(310,0),AutomaticSize=Enum.AutomaticSize.Y,
+		BackgroundColor3=Color3.fromRGB(10,16,12),Position=UDim2.fromOffset(330,0),
+		ClipsDescendants=false},holder)
+	corner(card,16)
+	stroke(card,col,1.5,0.15)
+
+	local gloss=new("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=Color3.new(1,1,1),
+		BackgroundTransparency=0.94},card)
+	corner(gloss,16)
+
+	local bar=new("Frame",{Size=UDim2.new(0,3,1,-20),Position=UDim2.fromOffset(10,10),
+		BackgroundColor3=col,BorderSizePixel=0},card)
+	corner(bar,"pill")
+
+	local iconCircle=new("Frame",{Size=UDim2.fromOffset(32,32),Position=UDim2.fromOffset(20,10),
+		BackgroundColor3=col:Lerp(Color3.new(0,0,0),0.6)},card)
+	corner(iconCircle,"pill")
+	stroke(iconCircle,col,1.5,0.3)
+	new("TextLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
+		Text=icon,Font=F.GothamBlack,TextSize=14,TextColor3=col,
+		TextXAlignment=CENTER,TextYAlignment=Enum.TextYAlignment.Center},iconCircle)
+
+	new("TextLabel",{Size=UDim2.new(1,-80,0,18),Position=UDim2.fromOffset(60,10),
+		BackgroundTransparency=1,Text=title,Font=F.GothamBlack,TextSize=12,
+		TextColor3=T.Text,TextTruncate=Enum.TextTruncate.AtEnd,TextXAlignment=LEFT},card)
+
+	if body~="" then
+		new("TextLabel",{Size=UDim2.new(1,-80,0,14),Position=UDim2.fromOffset(60,30),
+			BackgroundTransparency=1,Text=body,Font=F.GothamBold,TextSize=10,
+			TextColor3=T.Sub,TextTruncate=Enum.TextTruncate.AtEnd,TextXAlignment=LEFT},card)
+	end
+
+	new("Frame",{Size=UDim2.new(1,0,0,8),BackgroundTransparency=1,LayoutOrder=99},card)
+	local progTrack=new("Frame",{Size=UDim2.new(1,-24,0,2),Position=UDim2.new(0,12,1,-6),
+		BackgroundColor3=Color3.fromRGB(30,42,34),BorderSizePixel=0},card)
+	corner(progTrack,"pill")
+	local prog=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=col,BorderSizePixel=0},progTrack)
+	corner(prog,"pill")
+	gradient(prog,ACCENT,0)
+	tween(prog,dur,{Size=UDim2.fromScale(0,1)},Enum.EasingStyle.Linear)
+	tween(card,0.4,{Position=UDim2.fromOffset(0,0)},BACK)
+
+	task.delay(dur,function()
+		if not holder.Parent then return end
+		tween(card,0.3,{Position=UDim2.fromOffset(330,0)},Enum.EasingStyle.Quad,Enum.EasingDirection.In)
+		task.wait(0.35); holder:Destroy()
+	end)
+end
+
+local W,H=680,390
+local root=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),
+	Size=UDim2.fromOffset(W,H),BackgroundTransparency=1,Visible=false},gui)
+local rootSc=new("UIScale",{Scale=0},root)
 local function fitScale()
 	local cam=workspace.CurrentCamera; if not cam then return 1 end
 	local vp=cam.ViewportSize
-	return math.clamp(math.min((vp.X-24)/460,(vp.Y-24)/220),0.4,1)
+	return math.clamp(math.min((vp.X-24)/W,(vp.Y-24)/H),0.4,1)
+end
+local glow=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),
+	Size=UDim2.new(1,28,1,28),BackgroundColor3=T.G2,BackgroundTransparency=0.9,BorderSizePixel=0},root)
+corner(glow,36); loop(glow,1.8,{BackgroundTransparency=0.95})
+local main=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(1,1,1),
+	ClipsDescendants=true,BackgroundTransparency=0.35},root)
+corner(main,24)
+gradient(main,ColorSequence.new(Color3.fromRGB(11,20,15),T.Bg),60)
+local mainStroke=stroke(main,Color3.new(1,1,1),2,0.1)
+spin(gradient(mainStroke,ColorSequence.new({
+	ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),
+	ColorSequenceKeypoint.new(1,T.G2),}),30),45)
+particles(main,10)
+
+local header=new("Frame",{Size=UDim2.new(1,-20,0,44),Position=UDim2.fromOffset(10,10),
+	BackgroundColor3=T.Rail,BackgroundTransparency=0.3},main)
+corner(header,16); stroke(header,T.Stroke,1)
+local logo=new("Frame",{Size=UDim2.fromOffset(30,30),Position=UDim2.fromOffset(8,7),
+	BackgroundColor3=Color3.new(1,1,1)},header)
+corner(logo,10); spin(gradient(logo,ACCENT,45),80)
+label(header,{Size=UDim2.fromOffset(84,44),Position=UDim2.fromOffset(46,0),Text="APEX HUB",Font=F.GothamBlack,TextSize=14})
+label(header,{Size=UDim2.fromOffset(100,44),Position=UDim2.fromOffset(132,0),Text="/ Survival",TextSize=11,TextColor3=T.Sub})
+local verPill=new("Frame",{Size=UDim2.fromOffset(42,22),Position=UDim2.fromOffset(236,11),BackgroundColor3=T.Row},header)
+corner(verPill,"pill"); stroke(verPill,T.Stroke,1)
+label(verPill,{Size=UDim2.fromScale(1,1),Text="v3.1",Font=F.GothamBold,TextSize=10,TextColor3=T.Sub,TextXAlignment=CENTER})
+local statusPill=new("Frame",{Size=UDim2.fromOffset(90,22),Position=UDim2.fromOffset(284,11),BackgroundColor3=T.Row},header)
+corner(statusPill,"pill"); stroke(statusPill,T.Stroke,1)
+local statusDot=new("Frame",{Size=UDim2.fromOffset(8,8),Position=UDim2.fromOffset(10,7),BackgroundColor3=T.Sub,BorderSizePixel=0},statusPill); corner(statusDot,"pill")
+local statusText=label(statusPill,{Size=UDim2.new(1,-26,1,0),Position=UDim2.fromOffset(24,0),Text="Idle",Font=F.GothamBold,TextSize=10,TextTruncate=Enum.TextTruncate.AtEnd})
+local minBtn=new("TextButton",{Size=UDim2.fromOffset(30,30),Position=UDim2.new(1,-38,0,7),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},header)
+corner(minBtn,"pill"); stroke(minBtn,T.Stroke,1); juice(minBtn,1.08)
+local minBar=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(12,3),BackgroundColor3=T.G1,BorderSizePixel=0},minBtn); corner(minBar,"pill")
+
+local rail=new("Frame",{Size=UDim2.new(0,52,1,-74),Position=UDim2.fromOffset(10,64),BackgroundColor3=T.Rail,BackgroundTransparency=0.3},main)
+corner(rail,18); stroke(rail,T.Stroke,1)
+local tabIndicator=new("Frame",{Size=UDim2.fromOffset(40,40),Position=UDim2.fromOffset(6,10),BackgroundColor3=Color3.new(1,1,1),ZIndex=1},rail)
+corner(tabIndicator,14); spin(gradient(tabIndicator,ACCENT,45),60)
+local tabHolder=new("Frame",{Size=UDim2.new(1,0,1,-70),Position=UDim2.fromOffset(0,10),BackgroundTransparency=1,ZIndex=2},rail)
+new("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center},tabHolder)
+local avatar=new("ImageLabel",{Size=UDim2.fromOffset(34,34),Position=UDim2.new(0.5,-17,1,-44),BackgroundColor3=T.Row},rail)
+corner(avatar,"pill"); stroke(avatar,T.G2,2)
+task.spawn(function()
+	pcall(function() avatar.Image=Players:GetUserThumbnailAsync(lp.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end)
+end)
+
+local content=new("Frame",{Size=UDim2.new(1,-80,1,-74),Position=UDim2.fromOffset(70,64),BackgroundTransparency=1},main)
+local pageTitle=label(content,{Size=UDim2.new(1,-12,0,26),Position=UDim2.fromOffset(6,0),Text="",Font=F.GothamBlack,TextSize=20})
+local pageSub=label(content,{Size=UDim2.new(1,-12,0,14),Position=UDim2.fromOffset(6,26),Text="",TextSize=11,TextColor3=T.Sub})
+local pageHolder=new("Frame",{Size=UDim2.new(1,0,1,-48),Position=UDim2.fromOffset(0,48),BackgroundTransparency=1},content)
+
+local pages,tabs,tabOrder,current={},{},{},nil
+
+local function newPage(name)
+	local sf=new("ScrollingFrame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,BorderSizePixel=0,
+		ScrollBarThickness=3,ScrollBarImageColor3=T.G2,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,Visible=false},pageHolder)
+	pages[name]={Scroll=sf}
+	return pages[name]
 end
 
--- ===================== SPLASH (intro) =====================
+local function addTab(name,subtitle,icon)
+	local page=newPage(name); local idx=#tabOrder+1; table.insert(tabOrder,name)
+	local b=new("TextButton",{Size=UDim2.fromOffset(40,40),BackgroundTransparency=1,Text="",AutoButtonColor=false,LayoutOrder=idx},tabHolder)
+	corner(b,14); juice(b,1.08)
+	local ic=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1},b)
+	local setIcon=icon(ic); tabs[name]={Btn=b,SetIcon=setIcon}
+	tabs[name].Select=function()
+		for n,t in pairs(tabs) do local act=(n==name); pages[n].Scroll.Visible=act; t.SetIcon(act and T.Bg or T.Sub) end
+		tween(tabIndicator,0.4,{Position=UDim2.fromOffset(6,10+(idx-1)*46)},BACK)
+		current=name; pageTitle.Text=name; pageSub.Text=subtitle
+		pageTitle.TextTransparency=1; pageTitle.Position=UDim2.fromOffset(6,8)
+		tween(pageTitle,0.35,{TextTransparency=0,Position=UDim2.fromOffset(6,0)},BACK)
+	end
+	b.Activated:Connect(tabs[name].Select); return page
+end
+
+loop(statusDot,0.9,{BackgroundTransparency=0.65})
+addTab("Alvo",       "Escolha o ovo e o modo", iconTarget)
+addTab("Auto",       "Escolha as raridades alvo", iconAuto)
+addTab("Velocidade", "Ajuste de velocidade",    iconSpeed)
+addTab("Survival",   "Infinite Status",         iconHeart) -- NOVA ABA AQUI
+addTab("Anti-Lag",   "Otimização do jogo",      iconLag)
+addTab("Config",     "Ajustes do painel",       iconGear)
+
+-- ===================== LÓGICA E UI DO SURVIVAL (SAVANNAH LIFE) =====================
+local statusStates = { Stamina = false, Hunger = false, Thirst = false }
+
+-- Loop de Status
+task.spawn(function()
+	RunService.Heartbeat:Connect(function()
+		if not statusStates.Stamina and not statusStates.Hunger and not statusStates.Thirst then return end
+		local char = lp.Character
+		if not char then return end
+		
+		local function ProcessObject(obj)
+			for attrName, attrValue in pairs(obj:GetAttributes()) do
+				if type(attrValue) == "number" then
+					local lowerName = string.lower(attrName)
+					local maxVal = attrValue < 100 and 100 or (attrValue * 2)
+					if statusStates.Stamina and string.find(lowerName, "stamina") then
+						obj:SetAttribute(attrName, maxVal)
+					elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then
+						obj:SetAttribute(attrName, maxVal)
+					elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then
+						obj:SetAttribute(attrName, maxVal)
+					end
+				end
+			end
+			for _, v in ipairs(obj:GetDescendants()) do
+				if v:IsA("NumberValue") or v:IsA("IntValue") then
+					local lowerName = string.lower(v.Name)
+					if statusStates.Stamina and string.find(lowerName, "stamina") then
+						v.Value = 999999
+					elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then
+						v.Value = 999999
+					elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then
+						v.Value = 999999
+					end
+				end
+			end
+		end
+		
+		ProcessObject(lp)
+		ProcessObject(char)
+				local backpack = lp:FindFirstChild("Backpack"); if backpack then ProcessObject(backpack) end
+		local playerGui = lp:FindFirstChild("PlayerGui"); if playerGui then ProcessObject(playerGui) end
+		end)
+	end)
+end)
+
+-- Função pra desenhar ícones dos Toggles (Raio, Maçã, Gota)
+local function MakeToggleIcon(parent, iconType)
+	local container = new("Frame", {Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 1}, parent)
+	
+	if iconType == "Stamina" then
+		local p1 = new("Frame", {Size = UDim2.fromOffset(6, 14), Position = UDim2.fromOffset(10, 2), Rotation = 25, BackgroundColor3 = T.Gold, BorderSizePixel = 0}, container)
+		corner(p1, 2)
+		local p2 = new("Frame", {Size = UDim2.fromOffset(8, 12), Position = UDim2.fromOffset(6, 8), Rotation = -35, BackgroundColor3 = T.Gold, BorderSizePixel = 0}, container)
+		corner(p2, 2)
+	elseif iconType == "Hunger" then
+		local apple = new("Frame", {Size = UDim2.fromOffset(18, 18), Position = UDim2.fromOffset(3, 4), BackgroundColor3 = T.Red, BorderSizePixel = 0}, container)
+		corner(apple, "pill")
+		local stem = new("Frame", {Size = UDim2.fromOffset(3, 6), Position = UDim2.fromOffset(11, 0), Rotation = 15, BackgroundColor3 = T.Green, BorderSizePixel = 0}, container)
+		corner(stem, 1)
+	elseif iconType == "Thirst" then
+		local drop = new("Frame", {Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(4, 6), BackgroundColor3 = T.Blue, BorderSizePixel = 0}, container)
+		corner(drop, "pill")
+		local tip = new("Frame", {Size = UDim2.fromOffset(11, 11), Position = UDim2.fromOffset(6.5, 1), Rotation = 45, BackgroundColor3 = T.Blue, BorderSizePixel = 0}, container)
+		corner(tip, 2)
+	end
+	return container
+end
+
+-- Função de criar o Toggle na aba Survival
+local function CreateToggle(title, iconType, statusKey)
+	local row = new("Frame", {
+		Size = UDim2.new(1, 0, 0, 54),
+		BackgroundColor3 = T.Card,
+		ZIndex = 52
+	}, pages["Survival"].Scroll)
+	corner(row, 12); stroke(row, T.Stroke, 1)
+	
+	MakeToggleIcon(row, iconType).Position = UDim2.fromOffset(16, 15)
+	
+	label(row, {
+		Size = UDim2.new(1, -120, 1, 0),
+		Position = UDim2.fromOffset(52, 0),
+		Text = title,
+		Font = F.GothamBold,
+		TextSize = 14,
+		ZIndex = 52
+	})
+	
+	local switchBg = new("TextButton", {
+		Size = UDim2.fromOffset(44, 24),
+		Position = UDim2.new(1, -60, 0.5, -12),
+		BackgroundColor3 = T.Row,
+		Text = "",
+		ZIndex = 53,
+		AutoButtonColor = false
+	}, row)
+	corner(switchBg, "pill")
+	stroke(switchBg, T.Stroke, 1.5)
+	
+	local knob = new("Frame", {
+		Size = UDim2.fromOffset(18, 18),
+		Position = UDim2.fromOffset(3, 3),
+		BackgroundColor3 = T.Sub,
+		ZIndex = 54
+	}, switchBg)
+	corner(knob, "pill")
+	
+	local toggled = false
+	switchBg.MouseButton1Click:Connect(function()
+		toggled = not toggled
+		statusStates[statusKey] = toggled
+		
+		if toggled then
+			tween(switchBg, 0.2, {BackgroundColor3 = T.G1})
+			tween(switchBg.UIStroke, 0.2, {Color = T.G1})
+			tween(knob, 0.2, {Position = UDim2.fromOffset(23, 3), BackgroundColor3 = Color3.new(1,1,1)}, BACK)
+			toast({Title = title, Body = "Activated", Icon = "✓", Color = T.G1})
+		else
+			tween(switchBg, 0.2, {BackgroundColor3 = T.Row})
+			tween(switchBg.UIStroke, 0.2, {Color = T.Stroke})
+			tween(knob, 0.2, {Position = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Sub}, BACK)
+			toast({Title = title, Body = "Deactivated", Icon = "✕", Color = T.Red})
+		end
+	end)
+end
+
+-- Adiciona os Toggles com textos em inglês
+CreateToggle("Infinite Stamina", "Stamina", "Stamina")
+CreateToggle("Infinite Hunger", "Hunger", "Hunger")
+CreateToggle("Infinite Thirst", "Thirst", "Thirst")
+-- ================================================================================
+
+local open=false
+local function setOpen(v)
+	open=v
+	if v then
+		root.Visible=true; rootSc.Scale=0
+		tween(rootSc,0.55,{Scale=fitScale()},BACK)
+		for i,n in ipairs(tabOrder) do
+			local b=tabs[n].Btn; local sc=b:FindFirstChildOfClass("UIScale")
+			if sc then sc.Scale=0; task.delay(0.2+(i-1)*0.07,function() tween(sc,0.4,{Scale=1},BACK) end) end
+		end
+	else
+		tween(rootSc,0.25,{Scale=0},BACK,Enum.EasingDirection.In)
+		task.delay(0.27,function() if not open then root.Visible=false end end)
+	end
+end
+local fabStart
+fab.InputBegan:Connect(function(i)
+	if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then fabStart=fab.AbsolutePosition end
+end)
+fab.InputEnded:Connect(function()
+	if fabStart and(fab.AbsolutePosition-fabStart).Magnitude<6 then setOpen(not open) end; fabStart=nil
+end)
+minBtn.Activated:Connect(function() setOpen(false) end)
+draggable(header,root)
+tabs["Survival"].Select()
+
 local function runIntro()
 	fab.Visible=false
 	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
@@ -135,9 +512,9 @@ local function runIntro()
 	local line=new("Frame",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,80),Size=UDim2.fromOffset(0,3),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0,ZIndex=151},box)
 	corner(line,"pill"); gradient(line,ACCENT,0)
 	local best=new("TextLabel",{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,94),BackgroundTransparency=1,
-		Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
+				Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
 	local bestSc=new("UIScale",{Scale=0.6},best)
-
+	
 	task.spawn(function()
 		for i,p in ipairs(parts) do
 			task.delay((i-1)*0.2,function()
@@ -149,18 +526,18 @@ local function runIntro()
 		tween(line,0.8,{Size=UDim2.fromOffset(300,3)})
 		tween(best,0.8,{TextTransparency=0})
 		TweenService:Create(bestSc,TweenInfo.new(0.8,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
-
+		
 		task.wait(2.0)
-
+		
 		for _,p in ipairs(parts) do tween(p[1],0.6,{TextTransparency=1}) end
 		tween(best,0.6,{TextTransparency=1}); tween(line,0.6,{Size=UDim2.fromOffset(0,3)})
 		task.wait(0.5); tween(splash,0.6,{BackgroundTransparency=1}); sg.Enabled=false
 		task.wait(0.6); splash:Destroy(); fabSc.Scale=0; fab.Visible=true
 		TweenService:Create(fabSc,TweenInfo.new(0.6,BACK,Enum.EasingDirection.Out),{Scale=1}):Play()
+		task.wait(0.4); setOpen(true)
 	end)
 end
 
--- ===================== GATE (key) =====================
 local function runGate()
 	fab.Visible=false
 	local gate=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.2,BorderSizePixel=0,ZIndex=160,Active=true},gui)
@@ -170,20 +547,20 @@ local function runGate()
 	local bs=stroke(box,Color3.new(1,1,1),2,0.05)
 	spin(gradient(bs,ColorSequence.new({ColorSequenceKeypoint.new(0,T.G1),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(8,35,75)),ColorSequenceKeypoint.new(1,T.G2)}),30),70)
 	local boxSc=new("UIScale",{Scale=0},box); tween(boxSc,0.6,{Scale=math.min(1,fitScale()+0.15)},BACK)
-
+	
 	local gl=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.new(1,30,1,30),BackgroundColor3=T.G2,BackgroundTransparency=0.92,BorderSizePixel=0,ZIndex=0},box)
 	corner(gl,40); loop(gl,1.6,{BackgroundTransparency=0.97})
-
+	
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
-
+	
 	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
 	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
-
+	
 	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
 	local inStroke=stroke(inWrap,T.Stroke,1.5)
 	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(48,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
-
+	
 	do
 		local sh=new("Frame",{Size=UDim2.fromOffset(10,12),Position=UDim2.fromOffset(19,9),BackgroundTransparency=1},inWrap)
 		corner(sh,"pill"); new("UIStroke",{Color=T.G1,Thickness=2,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},sh)
@@ -231,7 +608,9 @@ local function runGate()
 	end
 
 	input:GetPropertyChangedSignal("Text"):Connect(function()
-		if (input.Text:gsub("%s+","")):lower() == KEY then checkKey() end
+		if (input.Text:gsub("%s+","")):lower() == KEY then
+			checkKey()
+		end
 	end)
 
 	input.FocusLost:Connect(function(enter)
@@ -244,255 +623,5 @@ local function runGate()
 	end)
 end
 
--- ===================== MENU PRINCIPAL =====================
-local statusStates = { Stamina = false, Hunger = false, Thirst = false }
-local isMenuOpen = false
-
--- Loop de Status (Savannah Life)
-local function StartStatusLoop()
-	task.spawn(function()
-		local runService = game:GetService("RunService")
-		runService.Heartbeat:Connect(function()
-			if not statusStates.Stamina and not statusStates.Hunger and not statusStates.Thirst then return end
-			local char = lp.Character
-			if not char then return end
-			
-			local function ProcessObject(obj)
-				for attrName, attrValue in pairs(obj:GetAttributes()) do
-					if type(attrValue) == "number" then
-						local lowerName = string.lower(attrName)
-						local maxVal = attrValue < 100 and 100 or (attrValue * 2)
-						if statusStates.Stamina and string.find(lowerName, "stamina") then
-							obj:SetAttribute(attrName, maxVal)
-						elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then
-							obj:SetAttribute(attrName, maxVal)
-						elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then
-							obj:SetAttribute(attrName, maxVal)
-						end
-					end
-				end
-				for _, v in ipairs(obj:GetDescendants()) do
-					if v:IsA("NumberValue") or v:IsA("IntValue") then
-						local lowerName = string.lower(v.Name)
-						if statusStates.Stamina and string.find(lowerName, "stamina") then
-							v.Value = 999999
-						elseif statusStates.Hunger and (string.find(lowerName, "hunger") or string.find(lowerName, "food")) then
-							v.Value = 999999
-						elseif statusStates.Thirst and (string.find(lowerName, "thirst") or string.find(lowerName, "water")) then
-							v.Value = 999999
-						end
-					end
-				end
-			end
-			
-			ProcessObject(lp)
-			ProcessObject(char)
-			local backpack = lp:FindFirstChild("Backpack"); if backpack then ProcessObject(backpack) end
-			local playerGui = lp:FindFirstChild("PlayerGui"); if playerGui then ProcessObject(playerGui) end
-		end)
-	end)
-end
-StartStatusLoop()
-
--- Funções para desenhar ícones vetoriais (sem emojis)
-local function MakeIcon(parent, iconType)
-	local container = new("Frame", {Size = UDim2.fromOffset(24, 24), BackgroundTransparency = 1}, parent)
-	
-	if iconType == "Stamina" then
-		-- Ícone de Raio (Lightning)
-		local p1 = new("Frame", {Size = UDim2.fromOffset(6, 14), Position = UDim2.fromOffset(10, 2), Rotation = 25, BackgroundColor3 = T.Gold, BorderSizePixel = 0}, container)
-		corner(p1, 2)
-		local p2 = new("Frame", {Size = UDim2.fromOffset(8, 12), Position = UDim2.fromOffset(6, 8), Rotation = -35, BackgroundColor3 = T.Gold, BorderSizePixel = 0}, container)
-		corner(p2, 2)
-		
-	elseif iconType == "Hunger" then
-		-- Ícone de Maçã/Fome (Círculo com cabinho)
-		local apple = new("Frame", {Size = UDim2.fromOffset(18, 18), Position = UDim2.fromOffset(3, 4), BackgroundColor3 = T.Red, BorderSizePixel = 0}, container)
-		corner(apple, "pill")
-		local stem = new("Frame", {Size = UDim2.fromOffset(3, 6), Position = UDim2.fromOffset(11, 0), Rotation = 15, BackgroundColor3 = T.Green, BorderSizePixel = 0}, container)
-		corner(stem, 1)
-		
-	elseif iconType == "Thirst" then
-		-- Ícone de Gota (Sede)
-		local drop = new("Frame", {Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(4, 6), BackgroundColor3 = T.Blue, BorderSizePixel = 0}, container)
-		corner(drop, "pill")
-		local tip = new("Frame", {Size = UDim2.fromOffset(11, 11), Position = UDim2.fromOffset(6.5, 1), Rotation = 45, BackgroundColor3 = T.Blue, BorderSizePixel = 0}, container)
-		corner(tip, 2)
-	end
-	return container
-end
-
--- Cria a Janela Principal
-local mainWindow = new("Frame", {
-	Size = UDim2.fromOffset(460, 300),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	BackgroundColor3 = T.Bg,
-	Visible = false,
-	ZIndex = 50
-}, gui)
-corner(mainWindow, 16)
-stroke(mainWindow, T.Stroke, 1.5)
-draggable(mainWindow, mainWindow)
-
--- Barra Lateral (Rail) para as abas
-local rail = new("Frame", {
-	Size = UDim2.new(0, 60, 1, 0),
-	BackgroundColor3 = T.Rail,
-	ZIndex = 51
-}, mainWindow)
-corner(rail, 16)
-
--- Aba Sem Nome (Apenas o ícone de raio nela)
-local tabBtn = new("TextButton", {
-	Size = UDim2.fromOffset(44, 44),
-	Position = UDim2.fromOffset(8, 16),
-	BackgroundColor3 = T.Row,
-	Text = "",
-	ZIndex = 52
-}, rail)
-corner(tabBtn, 10)
-juice(tabBtn, 1.08)
--- Ícone vetorial para a aba (Raio)
-MakeIcon(tabBtn, "Stamina").Position = UDim2.fromOffset(10, 10)
-
--- Container de conteúdo
-local content = new("Frame", {
-	Size = UDim2.new(1, -60, 1, 0),
-	Position = UDim2.fromOffset(60, 0),
-	BackgroundTransparency = 1,
-	ZIndex = 51
-}, mainWindow)
-new("UIListLayout", {Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center}, content)
-new("UIPadding", {PaddingTop = UDim.new(0, 20), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20)}, content)
-
--- Função de criar um Toggle Customizado
-local function CreateToggle(title, iconType, statusKey)
-	local row = new("Frame", {
-		Size = UDim2.new(1, 0, 0, 54),
-		BackgroundColor3 = T.Card,
-		ZIndex = 52
-	}, content)
-	corner(row, 12); stroke(row, T.Stroke, 1)
-	
-	-- Ícone
-	MakeIcon(row, iconType).Position = UDim2.fromOffset(16, 15)
-	
-	-- Texto
-	label(row, {
-		Size = UDim2.new(1, -120, 1, 0),
-		Position = UDim2.fromOffset(52, 0),
-		Text = title,
-		Font = F.GothamBold,
-		TextSize = 14,
-		ZIndex = 52
-	})
-	
-	-- Switch / Toggle
-	local switchBg = new("TextButton", {
-		Size = UDim2.fromOffset(44, 24),
-		Position = UDim2.new(1, -60, 0.5, -12),
-		BackgroundColor3 = T.Row,
-		Text = "",
-		ZIndex = 53,
-		AutoButtonColor = false
-	}, row)
-	corner(switchBg, "pill")
-	stroke(switchBg, T.Stroke, 1.5)
-	
-	local knob = new("Frame", {
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.fromOffset(3, 3),
-		BackgroundColor3 = T.Sub,
-		ZIndex = 54
-	}, switchBg)
-	corner(knob, "pill")
-	
-	local toggled = false
-	switchBg.MouseButton1Click:Connect(function()
-		toggled = not toggled
-		statusStates[statusKey] = toggled
-		
-		if toggled then
-			tween(switchBg, 0.2, {BackgroundColor3 = T.G1})
-			tween(switchBg.UIStroke, 0.2, {Color = T.G1})
-			tween(knob, 0.2, {Position = UDim2.fromOffset(23, 3), BackgroundColor3 = Color3.new(1,1,1)}, BACK)
-		else
-			tween(switchBg, 0.2, {BackgroundColor3 = T.Row})
-			tween(switchBg.UIStroke, 0.2, {Color = T.Stroke})
-			tween(knob, 0.2, {Position = UDim2.fromOffset(3, 3), BackgroundColor3 = T.Sub}, BACK)
-		end
-	end)
-end
-
--- Adiciona os três Toggles na Aba
-CreateToggle("Stamina Infinita", "Stamina", "Stamina")
-CreateToggle("Fome Infinita", "Hunger", "Hunger")
-CreateToggle("Sede Infinita", "Thirst", "Thirst")
-
--- Botão de fechar no canto da janela principal
-local closeBtn = new("TextButton", {
-	Size = UDim2.fromOffset(30, 30),
-	Position = UDim2.new(1, -40, 0, 10),
-	BackgroundColor3 = T.Row,
-	Text = "X",
-	TextColor3 = T.Red,
-	Font = F.GothamBold,
-	TextSize = 14,
-	ZIndex = 55
-}, mainWindow)
-corner(closeBtn, 8)
-juice(closeBtn, 1.1)
-
--- Lógica de fechar a janela
-closeBtn.MouseButton1Click:Connect(function()
-	if not isMenuOpen then return end
-	isMenuOpen = false
-	
-	-- Animação de encolher a janela
-	tween(mainWindow, 0.3, {Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1}, BACK, Enum.EasingDirection.In)
-	task.wait(0.3)
-	
-	-- Reseta o tamanho para quando abrir de novo
-	mainWindow.Visible = false
-	mainWindow.Size = UDim2.fromOffset(460, 300)
-	mainWindow.BackgroundTransparency = 0
-	
-	-- Traz o FAB de volta
-	fab.Visible = true
-	fabSc.Scale = 0
-	TweenService:Create(fabSc, TweenInfo.new(0.4, BACK, Enum.EasingDirection.Out), {Scale = 1}):Play()
-end)
-
--- Evento de clique no FAB para abrir o Menu Principal
-fab.MouseButton1Click:Connect(function()
-	if isMenuOpen then return end
-	isMenuOpen = true
-	
-	-- Esconde o FAB
-	tween(fabSc, 0.2, {Scale = 0}, BACK, Enum.EasingDirection.In)
-	task.wait(0.2)
-	fab.Visible = false
-	fabSc.Scale = 1
-	
-	-- Calcula o tamanho adaptado para a tela (igual ao fitScale)
-	local vp = workspace.CurrentCamera.ViewportSize
-	local targetW = math.clamp(vp.X - 40, 320, 460)
-	local targetH = math.clamp(vp.Y - 40, 240, 300)
-	
-	-- Abre a janela centralizada
-	mainWindow.Visible = true
-	mainWindow.Size = UDim2.fromOffset(0, 0)
-	mainWindow.BackgroundTransparency = 1
-	mainWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
-	
-	-- Animação de expansão
-	tween(mainWindow, 0.4, {
-		Size = UDim2.fromOffset(targetW, targetH),
-		BackgroundTransparency = 0
-	}, BACK)
-end)
-
--- Inicia o fluxo do script
 runGate()
-print("APEX HUB carregado com sucesso!")
+print("APEX HUB carregado!")
