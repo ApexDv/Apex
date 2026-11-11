@@ -1,9 +1,8 @@
---// ========== APEX HUB - PARTE 1: BASE ==========
-local Players         = game:GetService("Players")
-local UIS             = game:GetService("UserInputService")
-local TweenService    = game:GetService("TweenService")
-local RunService      = game:GetService("RunService")
-local CoreGui         = game:GetService("CoreGui")
+local Players      = game:GetService("Players")
+local UIS          = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService   = game:GetService("RunService")
+local CoreGui      = game:GetService("CoreGui")
 
 local KEY = "apex"
 local lp  = Players.LocalPlayer
@@ -65,7 +64,6 @@ local function draggable(handle,target)
 	end)
 end
 local ord=setmetatable({},{__index=function() return 0 end})
-local function nxt(parent) ord[parent]=ord[parent]+1; return ord[parent] end
 local spinners={}
 local function spin(g,speed) spinners[#spinners+1]={g,speed}; return g end
 local function particles(parent,n)
@@ -86,9 +84,6 @@ local function particles(parent,n)
 		end)
 	end
 end
-
-print("[ApexHub] Parte 1 ✔")
---// ========== PARTE 2: ÍCONES ==========
 local function iconCoin(ic)
 	local coin=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(18,18),BackgroundTransparency=1},ic)
 	corner(coin,"pill")
@@ -97,7 +92,6 @@ local function iconCoin(ic)
 	corner(inner,"pill")
 	return function(c) rs.Color=c; inner.BackgroundColor3=c end
 end
-
 local function iconGear(ic)
 	local ring=new("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(10,10),BackgroundTransparency=1},ic)
 	corner(ring,"pill")
@@ -110,9 +104,6 @@ local function iconGear(ic)
 	end
 	return function(c) rs.Color=c; for _,t in ipairs(teeth) do t.BackgroundColor3=c end end
 end
-
-print("[ApexHub] Parte 2 ✔")
---// ========== PARTE 3: GUI + TOAST ==========
 local gui = new("ScreenGui",{
 	Name="ApexHub", ResetOnSpawn=false,
 	ZIndexBehavior=Enum.ZIndexBehavior.Sibling, IgnoreGuiInset=true
@@ -149,9 +140,6 @@ local function primary(parent,props)
 	corner(b,"pill"); spin(gradient(b,ACCENT,20),40); juice(b,1.04)
 	return b
 end
-
-print("[ApexHub] Parte 3 ✔")
---// ========== PARTE 4: JANELA ==========
 local function fitScale()
 	local cam = workspace.CurrentCamera
 	if not cam then return 1 end
@@ -174,13 +162,11 @@ gradient(logoLbl,ACCENT,0)
 label(header,{Size=UDim2.fromOffset(200,16),Position=UDim2.fromOffset(20,34),Text="premium • v2.0",TextSize=11,TextColor3=T.Sub})
 
 local statusDot = new("Frame",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-80,0.5,0),Size=UDim2.fromOffset(8,8),BackgroundColor3=T.Green,BorderSizePixel=0},header)
-corner(statusDot,"pill")
-loop(statusDot,0.9,{BackgroundTransparency=0.65})
+corner(statusDot,"pill"); loop(statusDot,0.9,{BackgroundTransparency=0.65})
 
 local minBtn = new("TextButton",{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-20,0.5,0),Size=UDim2.fromOffset(26,26),
 	BackgroundColor3=T.Row,Text="—",Font=F.GothamBold,TextSize=16,TextColor3=T.Text,AutoButtonColor=false},header)
 corner(minBtn,"pill"); juice(minBtn,1.15)
-
 draggable(header,root)
 
 local rail = new("Frame",{Size=UDim2.new(0,170,1,-54),Position=UDim2.fromOffset(0,54),BackgroundTransparency=1},root)
@@ -209,7 +195,7 @@ local function addTab(name, subtitle, iconFn)
 	setIconColor(T.Sub)
 	tabs[name] = {Btn=btn, Page=page, SetIcon=setIconColor, Text=txt}
 
-	local function select()
+	btn.Activated:Connect(function()
 		for n,t in pairs(tabs) do
 			local active = (n == name)
 			tween(t.Btn,0.2,{BackgroundColor3= active and T.Row or T.Rail})
@@ -217,21 +203,15 @@ local function addTab(name, subtitle, iconFn)
 			t.Text.TextColor3 = active and T.G1 or T.Text
 			t.Page.Visible = active
 		end
-	end
-	btn.Activated:Connect(select)
+	end)
 	tabOrder[#tabOrder+1] = name
-	return select
 end
 
 local function row(parent, page, text, height)
 	height = height or 44
-	local r = new("Frame",{
-		Size = UDim2.new(1, 0, 0, height),
-		BackgroundColor3 = T.Row, BorderSizePixel = 0
-	}, parent)
+	local r = new("Frame",{Size = UDim2.new(1, 0, 0, height),BackgroundColor3 = T.Row, BorderSizePixel = 0}, parent)
 	corner(r,10); stroke(r)
-	local l = label(r,{Size=UDim2.new(1,-100,0,height),Position=UDim2.fromOffset(12,0),
-		Text=text,Font=F.GothamBold,TextSize=13})
+	local l = label(r,{Size=UDim2.new(1,-100,0,height),Position=UDim2.fromOffset(12,0),Text=text,Font=F.GothamBold,TextSize=13})
 	return r, l
 end
 
@@ -239,8 +219,7 @@ local function card(parent, side, title)
 	local c = new("Frame",{
 		Size = UDim2.new(0.5, -6, 1, 0),
 		Position = side=="Left" and UDim2.new(0,0,0,0) or UDim2.new(0.5,6,0,0),
-		BackgroundColor3 = T.Card, BorderSizePixel = 0,
-		ClipsDescendants = true
+		BackgroundColor3 = T.Card, BorderSizePixel = 0, ClipsDescendants = true
 	}, parent)
 	corner(c,12); stroke(c)
 	label(c,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(12,8),Text=title,Font=F.GothamBold,TextSize=13,TextColor3=T.G1})
@@ -257,9 +236,6 @@ local function addInfo(c, page, title, val)
 	local v = label(r,{Size=UDim2.new(1,-16,0,18),Position=UDim2.fromOffset(10,20),Text=val,Font=F.GothamBold,TextSize=14,TextColor3=T.Text})
 	return v
 end
-
-print("[ApexHub] Parte 4 ✔")
---// ========== PARTE 5: CONTROLES ==========
 local function addToggle(c,page,text,default,cb)
 	local r=row(c.Inner,c,text)
 	local track=new("TextButton",{Size=UDim2.fromOffset(44,24),Position=UDim2.new(1,-58,0.5,-12),BackgroundColor3=T.Row,Text="",AutoButtonColor=false},r)
@@ -304,57 +280,113 @@ local function addSlider(c,page,text,min,max,default,cb)
 	UIS.InputChanged:Connect(function(i) if dragging and(i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then update(i.Position.X) end end)
 	return function(v,silent) v=setValue(v); if not silent then task.spawn(function() pcall(cb,v) end) end end
 end
-
-print("[ApexHub] Parte 5 ✔")
---// ========== PARTE 6: ABAS ==========
-addTab("Coin",   "Farm de moedas automático", iconCoin)
-addTab("Config", "Ajustes do painel",         iconGear)
+addTab("Coin",   "Farm de moedas MM2", iconCoin)
+addTab("Config", "Ajustes do painel", iconGear)
 
 local pCoin = pages["Coin"].Content
 local pCfg  = pages["Config"].Content
 
--- ===== Coin: Farm =====
+_G.farmRunning = false
+_G.farmInterval = 0.5
+
+local function getCoinsContainer()
+	local found = workspace:FindFirstChild("CoinContainer")
+	if found then return found end
+	for _,v in ipairs(workspace:GetChildren()) do
+		if v.Name == "CoinContainer" or v:FindFirstChild("CoinContainer") then
+			return v:FindFirstChild("CoinContainer") or v
+		end
+	end
+	return nil
+end
+
+local function getNearestCoin(hrp)
+	local container = getCoinsContainer()
+	if not container or not hrp then return nil end
+	local nearest, dist = nil, math.huge
+	for _,coin in ipairs(container:GetChildren()) do
+		local part = coin:IsA("BasePart") and coin or coin:FindFirstChildWhichIsA("BasePart")
+		if part and part.Transparency < 0.9 and part.Parent then
+			local d = (hrp.Position - part.Position).Magnitude
+			if d < dist then dist = d; nearest = part end
+		end
+	end
+	return nearest
+end
+
 local cCoinL = card(pCoin,"Left","Auto Farm")
+
 addToggle(cCoinL,pCoin,"Ativar Farm",false,function(on)
+	_G.farmRunning = on
 	if on then
-		toast({Title="Farm",Body="Farm ativado!",Color=T.Gold,Duration=3})
+		toast({Title="Farm MM2",Body="Ativado!",Color=T.Gold,Duration=2})
+		task.spawn(function()
+			while _G.farmRunning do
+				local char = lp.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					local coin = getNearestCoin(hrp)
+					if coin then
+						pcall(function()
+							hrp.CFrame = coin.CFrame + Vector3.new(0,2,0)
+						end)
+					end
+				end
+				task.wait(_G.farmInterval)
+			end
+		end)
 	else
-		toast({Title="Farm",Body="Farm desativado",Color=T.Red,Duration=2})
+		toast({Title="Farm MM2",Body="Desativado",Color=T.Red,Duration=2})
 	end
 end)
-addSlider(cCoinL,pCoin,"Intervalo (s)",1,30,5,function(v) end)
-addButton(cCoinL,pCoin,"Coletar Agora",function()
-	toast({Title="Coleta",Body="Coletando moedas...",Color=T.Gold,Duration=2})
+
+addSlider(cCoinL,pCoin,"Intervalo (s)",1,10,1,function(v)
+	_G.farmInterval = v
 end)
 
--- ===== Coin: Status =====
-local cCoinR = card(pCoin,"Right","Status")
-local coinLbl = addInfo(cCoinR,pCoin,"Moedas","0")
-addInfo(cCoinR,pCoin,"Status","Parado")
+addButton(cCoinL,pCoin,"Coletar Agora",function()
+	local char = lp.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		local coin = getNearestCoin(hrp)
+		if coin then
+			pcall(function() hrp.CFrame = coin.CFrame + Vector3.new(0,2,0) end)
+			toast({Title="Coleta",Body="Moeda coletada!",Color=T.Gold,Duration=2})
+		else
+			toast({Title="Coleta",Body="Nenhuma moeda próxima",Color=T.Red,Duration=2})
+		end
+	else
+		toast({Title="Coleta",Body="Personagem não encontrado",Color=T.Red,Duration=2})
+	end
+end)
 
--- contador visual (troque pela lógica real do jogo)
+local cCoinR = card(pCoin,"Right","Status")
+local coinLbl  = addInfo(cCoinR,pCoin,"Moedas no Mapa","0")
+local statusLbl = addInfo(cCoinR,pCoin,"Status","Parado")
+
 task.spawn(function()
-	local n = 0
 	while true do
-		task.wait(2); n = n + math.random(1,5)
+		task.wait(1)
 		pcall(function()
-			if coinLbl and coinLbl.Parent then coinLbl.Text = tostring(n) end
+			if statusLbl and statusLbl.Parent then
+				statusLbl.Text = _G.farmRunning and "Farmando..." or "Parado"
+			end
+			if coinLbl and coinLbl.Parent then
+				local container = getCoinsContainer()
+				coinLbl.Text = container and tostring(#container:GetChildren()) or "0"
+			end
 		end)
 	end
 end)
 
--- ===== Config =====
 local cCfgL = card(pCfg,"Left","Painel")
 local closeBtn = addButton(cCfgL,pCfg,"Fechar Painel",function() end)
 addToggle(cCfgL,pCfg,"Salvar Config",true,function() end)
 
 local cCfgR = card(pCfg,"Right","Sobre")
 addInfo(cCfgR,pCfg,"Versão","2.0")
+addInfo(cCfgR,pCfg,"Jogo","MM2")
 addInfo(cCfgR,pCfg,"Autor","Apex Hub")
-addInfo(cCfgR,pCfg,"Modo","Coin Only")
-
-print("[ApexHub] Parte 6 ✔")
---// ========== PARTE 7: FAB / INTRO / GATE ==========
 local fabSc = Instance.new("UIScale")
 local fab = new("TextButton",{
 	AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-24,1,-24),
@@ -389,13 +421,8 @@ fab.InputEnded:Connect(function()
 	if fabStart and(fab.AbsolutePosition-fabStart).Magnitude<6 then setOpen(not open) end; fabStart=nil
 end)
 minBtn.Activated:Connect(function() setOpen(false) end)
+if closeBtn then closeBtn.Activated:Connect(function() setOpen(false) end) end
 
--- "Fechar Painel" da Config
-if closeBtn then
-	closeBtn.Activated:Connect(function() setOpen(false) end)
-end
-
--- Seleciona Coin como aba inicial
 for n,t in pairs(tabs) do
 	local active = (n=="Coin")
 	t.Btn.BackgroundColor3 = active and T.Row or T.Rail
@@ -404,14 +431,12 @@ for n,t in pairs(tabs) do
 	t.Page.Visible = active
 end
 
--- Spinner global
 RunService.RenderStepped:Connect(function(dt)
 	for _,s in ipairs(spinners) do
 		if s[1] and s[1].Parent then s[1].Rotation = (s[1].Rotation + s[2]*dt) % 360 end
 	end
 end)
 
--- INTRO
 local function runIntro()
 	fab.Visible=false
 	local splash=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BorderSizePixel=0,ZIndex=150},gui)
@@ -428,7 +453,7 @@ local function runIntro()
 	local line=new("Frame",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,80),Size=UDim2.fromOffset(0,3),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0,ZIndex=151},box)
 	corner(line,"pill"); gradient(line,ACCENT,0)
 	local best=new("TextLabel",{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,94),BackgroundTransparency=1,
-		Text="A P E X   H U B   -   T H E   B E S T",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
+		Text="A P E X   H U B   M M 2",Font=F.GothamBold,TextSize=18,TextColor3=T.Sub,TextTransparency=1,ZIndex=151},box)
 	local bestSc=new("UIScale",{Scale=0.6},best)
 
 	task.spawn(function()
@@ -450,7 +475,6 @@ local function runIntro()
 	end)
 end
 
--- GATE
 local function runGate()
 	fab.Visible=false
 	local gate=new("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=0.2,BorderSizePixel=0,ZIndex=160,Active=true},gui)
@@ -467,12 +491,12 @@ local function runGate()
 	local lg=new("TextLabel",{AnchorPoint=Vector2.new(0.5,0),Position=UDim2.new(0.5,0,0,22),Size=UDim2.fromOffset(58,58),BackgroundColor3=Color3.new(1,1,1),Text="A",Font=F.GothamBlack,TextSize=32,TextColor3=T.Bg},box)
 	corner(lg,20); spin(gradient(lg,ACCENT,45),90); local lgSc=new("UIScale",{Scale=1},lg); loop(lgSc,1.2,{Scale=1.1})
 
-	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
+	label(box,{Size=UDim2.new(1,0,0,26),Position=UDim2.fromOffset(0,90),Text="APEX HUB MM2",Font=F.GothamBlack,TextSize=21,TextXAlignment=CENTER})
 	label(box,{Size=UDim2.new(1,0,0,16),Position=UDim2.fromOffset(0,117),Text="Digite sua key para continuar",TextSize=12,TextColor3=T.Sub,TextXAlignment=CENTER})
 
 	local inWrap=new("Frame",{Size=UDim2.new(1,-48,0,44),Position=UDim2.fromOffset(24,146),BackgroundColor3=T.Row},box); corner(inWrap,"pill")
 	local inStroke=stroke(inWrap,T.Stroke,1.5)
-	local input=new("TextBox",{Size=UDim2.new(1,-64,1,0),Position=UDim2.fromOffset(24,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
+	local input=new("TextBox",{Size=UDim2.new(1,-24,1,0),Position=UDim2.fromOffset(24,0),BackgroundTransparency=1,Text="",PlaceholderText="Cole ou digite a key",PlaceholderColor3=T.Sub,TextColor3=T.Text,Font=F.GothamBold,TextSize=14,ClearTextOnFocus=false,TextXAlignment=LEFT},inWrap)
 
 	local verificado = false
 	local function checkKey()
@@ -491,4 +515,3 @@ local function runGate()
 end
 
 runGate()
-print("[ApexHub] TUDO carregado ✔ — key: apex")
