@@ -605,4 +605,319 @@ Main:Toggle({
                 while getgenv().remove_gun_cooldown do
                     task.wait(0.1)
                     local tools = {}
-                    for _, 
+                                                for _, container in ipairs({ Player:FindFirstChild("Backpack"), Player.Character }) do
+                        if container then
+                            for _, tool in ipairs(container:GetChildren()) do
+                                if tool:IsA("Tool") and tool:FindFirstChild("Fire") then 
+                                    table.insert(tools, tool) 
+                                end
+                            end
+                        end
+                    end
+                    for _, tool in ipairs(tools) do
+                        if getgenv().original_cooldowns[tool] == nil then 
+                            getgenv().original_cooldowns[tool] = tool:GetAttribute("Cooldown") 
+                        end
+                        if tool:GetAttribute("Cooldown") ~= 0 then 
+                            tool:SetAttribute("Cooldown", 0) 
+                        end
+                    end
+                end
+            end)
+        else
+            for tool, cooldown in pairs(getgenv().original_cooldowns) do
+                if tool and tool.Parent then 
+                    tool:SetAttribute("Cooldown", cooldown) 
+                end
+            end
+            getgenv().original_cooldowns = {}
+        end
+    end,
+})
+local Esp = window:Tab({ Title = "Esp Highlights", Icon = "eye", Locked = false })
+getgenv().esp_team_color = Color3.fromRGB(0, 255, 0)
+getgenv().esp_enemy_color = Color3.fromRGB(255, 0, 0)
+getgenv().esp_charms_highlighter = false
+local charms_esp = CoreGui:FindFirstChild("Highlights") or Instance.new("Folder")
+charms_esp.Name = "CharmsESP"
+charms_esp.Parent = CoreGui
+Esp:Toggle({
+    Title = "Enable Charms Highlighter",
+    Desc = "Highlights players full body",
+    Icon = "check",
+    Default = false,
+    Flag = "EspCharmsToggle",
+    Callback = function(Value)
+        getgenv().esp_charms_highlighter = Value
+        if not getgenv().esp_charms_highlighter then
+            FeatureActivated(false)
+            for _, esp_players in ipairs(charms_esp:GetChildren()) do esp_players:Destroy() end
+            return
+        else
+            FeatureActivated(true)
+        end
+        task.spawn(function()
+            while getgenv().esp_charms_highlighter do
+                task.wait(0.1)
+                for _, v in matchEnemies do
+                    if not getgenv().esp_charms_highlighter then break end
+                    if v ~= Player then
+                        local character = v.Character
+                        if character then
+                            local highlight = charms_esp:FindFirstChild(v.Name)
+                            if not highlight then
+                                highlight = Instance.new("Highlight")
+                                highlight.Name = v.Name
+                                highlight.FillTransparency = 0.6
+                                highlight.OutlineTransparency = 0.4
+                                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                highlight.Parent = charms_esp
+                            end
+                            local teamColor = (v.Team == Player.Team) and getgenv().esp_team_color or getgenv().esp_enemy_color
+                            highlight.FillColor = teamColor
+                            highlight.OutlineColor = teamColor
+                            highlight.Adornee = character
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+getgenv().esp_skeleton = false
+local skeleton_folder = CoreGui:FindFirstChild("Skeletons") or Instance.new("Folder")
+skeleton_folder.Name = "Skeletons"
+skeleton_folder.Parent = CoreGui
+Esp:Toggle({
+    Title = "Enable Skeletal Highlighter",
+    Desc = "Highlights players skeleton",
+    Icon = "check",
+    Default = false,
+    Flag = "EspSkeletonToggle",
+    Callback = function(Value)
+        getgenv().esp_skeleton = Value
+        local function cleanup()
+            for _, child in ipairs(skeleton_folder:GetChildren()) do child:Destroy() end
+        end
+        if not Value then cleanup(); FeatureActivated(false); return else FeatureActivated(true) end
+        task.spawn(function()
+            local function createLine()
+                local line = Instance.new("LineHandleAdornment")
+                line.Thickness = 2
+                line.ZIndex = 10
+                line.AlwaysOnTop = true
+                return line
+            end
+            local bones = {
+                { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" },
+                { "UpperTorso", "LeftUpperArm" }, { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" },
+                { "UpperTorso", "RightUpperArm" }, { "RightUpperArm", "RightLowerArm" }, { "RightLowerArm", "RightHand" },
+                { "LowerTorso", "LeftUpperLeg" }, { "LeftUpperLeg", "LeftLowerLeg" }, { "LeftLowerLeg", "LeftFoot" },
+                { "LowerTorso", "RightUpperLeg" }, { "RightUpperLeg", "RightLowerLeg" }, { "RightLowerLeg", "RightFoot" }
+            }
+            while getgenv().esp_skeleton do
+                task.wait(0.1)
+                for _, v in matchEnemies do
+                    local char = v.Character
+                    local holder = skeleton_folder:FindFirstChild(v.Name)
+                    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                        if not holder then holder = Instance.new("Folder"); holder.Name = v.Name; holder.Parent = skeleton_folder end
+                        local color = (v.Team == Player.Team) and getgenv().esp_team_color or getgenv().esp_enemy_color
+                        for i, bonePair in ipairs(bones) do
+                            local p1, p2 = char:FindFirstChild(bonePair[1]), char:FindFirstChild(bonePair[2])
+                            if p1 and p2 then
+                                local line = holder:FindFirstChild(tostring(i)) or createLine()
+                                line.Name = tostring(i)
+                                line.Color3 = color
+                                line.Adornee = p1
+                                line.CFrame = CFrame.new(Vector3.zero, p1.CFrame:PointToObjectSpace(p2.Position))
+                                line.Length = (p1.Position - p2.Position).Magnitude
+                                line.Parent = holder
+                            end
+                        end
+                    elseif holder then holder:Destroy() end
+                end
+                for _, child in ipairs(skeleton_folder:GetChildren()) do
+                    if not Players:FindFirstChild(child.Name) then child:Destroy() end
+                end
+            end
+            cleanup()
+        end)
+    end
+})
+getgenv().esp_tracers = false
+local tracers_folder = CoreGui:FindFirstChild("Tracers") or Instance.new("Folder")
+tracers_folder.Name = "Tracers"
+tracers_folder.Parent = CoreGui
+local tracerConnection = nil
+Esp:Toggle({
+    Title = "Enable Tracers Highlighter",
+    Desc = "Draws lines from your character to others smoothly.",
+    Icon = "check",
+    Default = false,
+    Flag = "EspTracersToggle",
+    Callback = function(Value)
+        getgenv().esp_tracers = Value
+        local function cleanup()
+            for _, child in ipairs(tracers_folder:GetChildren()) do child:Destroy() end
+        end
+        if tracerConnection then tracerConnection:Disconnect(); tracerConnection = nil end
+        if not Value then cleanup(); FeatureActivated(false); return else FeatureActivated(true) end
+        tracerConnection = RunService.RenderStepped:Connect(function()
+            if not getgenv().esp_tracers then
+                if tracerConnection then tracerConnection:Disconnect(); tracerConnection = nil end
+                cleanup()
+                return
+            end
+            local myChar = Player.Character
+            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                for _, v in ipairs(matchEnemies) do
+                    if v ~= Player and v.Parent then
+                        local char = v.Character
+                        local tracer = tracers_folder:FindFirstChild(v.Name)
+                        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                            if not tracer then
+                                tracer = Instance.new("LineHandleAdornment")
+                                tracer.Name = v.Name
+                                tracer.Thickness = 1.5
+                                tracer.ZIndex = 10
+                                tracer.AlwaysOnTop = true
+                                tracer.Parent = tracers_folder
+                            end
+                            local targetRoot = char.HumanoidRootPart
+                            local color = (v.Team == Player.Team) and getgenv().esp_team_color or getgenv().esp_enemy_color
+                            tracer.Color3 = color
+                            tracer.Adornee = workspace.Terrain
+                            tracer.CFrame = CFrame.lookAt(myRoot.Position, targetRoot.Position)
+                            tracer.Length = (myRoot.Position - targetRoot.Position).Magnitude
+                        elseif tracer then
+                            tracer:Destroy()
+                        end
+                    end
+                end
+            else
+                cleanup()
+            end
+            for _, child in ipairs(tracers_folder:GetChildren()) do
+                if not Players:FindFirstChild(child.Name) then child:Destroy() end
+            end
+        end)
+    end
+})
+Esp:Colorpicker({ Title = "Team Color Highlight", Desc = "Esp color for teammates", Default = Color3.fromRGB(0, 255, 0), Transparency = 0, Locked = false, Flag = "EspTeamColorPicker", Callback = function(color) getgenv().esp_team_color = color end })
+Esp:Colorpicker({ Title = "Enemy Color Highlight", Desc = "Esp color for enemies", Default = Color3.fromRGB(255, 0, 0), Transparency = 0, Locked = false, Flag = "EspEnemyColorPicker", Callback = function(color) getgenv().esp_enemy_color = color end })
+
+local Killing = window:Tab({ Title = "Kill All", Icon = "skull", Locked = false })
+getgenv().autoKillGun = false
+Killing:Button({
+    Title = "[GUN] Kill all players once",
+    Desc = "Kills all players in your server once",
+    Locked = false,
+    Callback = function()
+        if getgenv().match then
+            local myMatch = Player:GetAttribute("Match")
+            if myMatch then
+                equipGun()
+                wind:Notify({ Title = "Killing all players!", Content = "Enjoying APEX?", Duration = 3, Icon = "rbxassetid://139687752061139" })
+                for _, plr in matchEnemies do
+                    if plr.Team ~= Player.Team and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        local target = plr.Character.HumanoidRootPart
+                        local origin = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                        if origin then
+                            local ShootGun = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShootGun")
+                            ShootGun:FireServer(origin.Position, target.Position, target, target.Position)
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end
+        end
+    end
+})
+Killing:Toggle({
+    Title = "[GUN] Auto kill all players",
+    Desc = "Kills everyone constantly in your server with gun",
+    Value = false,
+    Callback = function(state)
+        getgenv().autoKillGun = state
+        if state then FeatureActivated(true) else FeatureActivated(false) end
+    end
+})
+task.spawn(function()
+    while true do
+        if getgenv().autoKillGun then
+            local myMatch = Player:GetAttribute("Match")
+            if myMatch then
+                equipGun()
+                for _, plr in matchEnemies do
+                    if plr.Team ~= Player.Team and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        local target = plr.Character.HumanoidRootPart
+                        local origin = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                        if origin then
+                            local ShootGun = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShootGun")
+                            ShootGun:FireServer(origin.Position, target.Position, target, target.Position)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+end)
+getgenv().autoKillKnife = false
+Killing:Button({
+    Title = "[KNIFE] Kill all players once",
+    Desc = "Kills all players in your server once",
+    Locked = false,
+    Callback = function()
+        if getgenv().match then
+            local myMatch = Player:GetAttribute("Match")
+            if myMatch then
+                equipKnife()
+                wind:Notify({ Title = "Killing all players!", Content = "Enjoying APEX?", Duration = 3, Icon = "rbxassetid://139687752061139" })
+                for _, target in ipairs(Players:GetPlayers()) do
+                    if target ~= Player and target.Character then
+                        local humanoid = target.Character:FindFirstChild("Humanoid")
+                        local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
+                        if humanoid and humanoid.Health > 0 and rootPart then
+                            local knifeRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ThrowHit")
+                            knifeRemote:FireServer(rootPart, rootPart.Position)
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end
+        end
+    end
+})
+Killing:Toggle({
+    Title = "[KNIFE] Auto kill all players",
+    Desc = "Kills everyone constantly in your server with knife",
+    Value = false,
+    Callback = function(state)
+        getgenv().autoKillKnife = state
+        if state then FeatureActivated(true) else FeatureActivated(false) end
+    end
+})
+task.spawn(function()
+    while true do
+        if getgenv().autoKillKnife then
+            local myMatch = Player:GetAttribute("Match")
+            if myMatch then
+                equipKnife()
+                for _, target in matchEnemies do
+                    if target ~= Player and target.Character then
+                        local humanoid = target.Character:FindFirstChild("Humanoid")
+                        local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
+                        if humanoid and humanoid.Health > 0 and rootPart then
+                            local knifeRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ThrowHit")
+                            knifeRemote:FireServer(rootPart, rootPart.Position)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+end)
