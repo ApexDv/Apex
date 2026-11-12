@@ -531,4 +531,494 @@ local uteuirhguh = Main:Toggle({
                                         params.FilterDescendantsInstances = { myChar, player.Character }
                                         params.FilterType = Enum.RaycastFilterType.Exclude
                                         local result = workspace:Raycast(myRoot.Position,
-                                 
+                                         local result = workspace:Raycast(myRoot.Position,
+                                            (enemyHrp.Position - myRoot.Position), params)
+
+                                        if dist < shortestDist and not result then
+                                            shortestDist = dist
+                                            closestTarget = player.Character
+                                        end
+                                    end
+                                end
+                            end
+
+                            if closestTarget then
+                                throwKnife(closestTarget)
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+Main:Slider({
+    Title = "Max Throw Distance",
+    Value = { Min = 0, Max = 1000, Default = 300 },
+    Callback = function(v) getgenv().max_distance = v end
+})
+Main:Slider({
+    Title = "Cooldown",
+    Value = { Min = 0.5, Max = 10, Default = 2 },
+    Callback = function(v) getgenv().throw_cooldown = v end
+})
+Main:Space()
+
+getgenv().triggerbot_enabled = false
+getgenv().triggerbot_firing = false
+getgenv().triggerbot_cooldown = 1
+local function triggerbot_valid_enemy(enemy)
+    if not enemy or enemy == Player then return false end
+    local character = enemy.Character
+    if not character or character.Parent ~= Workspace then return false end
+    if enemy.Team and enemy.Team == Player.Team then return false end
+    local humanoid = character:FindFirstChild("Humanoid")
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local my_hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+    if not (humanoid and hrp and my_hrp) then return false end
+    if humanoid.Health <= 0 then return false end
+    if Collection:HasTag(character, "Invulnerable") or Collection:HasTag(character, "SpeedTrail") then return false end
+    return true
+end
+local function triggerbot_shoot(target)
+    local my_char = Player.Character
+    local my_root = my_char and my_char:FindFirstChild("HumanoidRootPart")
+    local target_hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    if not (my_root and target_hrp) then
+        getgenv().triggerbot_firing = false
+        return
+    end
+    local hit_part = target.Character:FindFirstChild("LowerTorso")
+        or target.Character:FindFirstChild("UpperTorso")
+        or target.Character:FindFirstChild("Head")
+    if hit_part then
+        ShootGun(target)
+    else
+        getgenv().triggerbot_firing = false
+    end
+end
+RunService.Heartbeat:Connect(function()
+    if not getgenv().triggerbot_enabled then return end
+    if not getgenv().match then return end
+    if getgenv().triggerbot_firing then return end
+    local character = Player.Character
+    if not character then return end
+    if not getgenv().match then return end
+    local mousePos = UserInputService:GetMouseLocation()
+    local ray = Camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = { character }
+    rayParams.IgnoreWater = true
+    local result = Workspace:Raycast(ray.Origin, ray.Direction * 2000, rayParams)
+    if not result then return end
+    local hitCharacter = result.Instance:FindFirstAncestorOfClass("Model")
+    if not hitCharacter then return end
+    local hitPlayer = Players:GetPlayerFromCharacter(hitCharacter)
+    if not hitPlayer then return end
+    if triggerbot_valid_enemy(hitPlayer) then
+        getgenv().triggerbot_firing = true
+        triggerbot_shoot(hitPlayer)
+        task.delay(getgenv().triggerbot_cooldown, function()
+            getgenv().triggerbot_firing = false
+        end)
+    end
+end)
+Main:Toggle({
+    Title = "Trigger Bot",
+    Desc = "Automatically shoots when your mouse hovers over an enemy",
+    Icon = "check",
+    Default = false,
+    Flag = "TriggerBotToggle",
+    Callback = function(Value)
+        getgenv().triggerbot_enabled = Value
+        if getgenv().triggerbot_enabled then
+            FeatureActivated(true)
+        else
+            FeatureActivated(false)
+        end
+    end
+})
+Main:Slider({
+    Title = "Trigger Bot Cooldown",
+    Step = 0.1,
+    Flag = "TriggerBotCooldownSlider",
+    Value = { Min = 0, Max = 3, Default = 1 },
+    Callback = function(value) getgenv().triggerbot_cooldown = value end
+})
+Main:Space()
+
+getgenv().hitbox_expander = false
+getgenv().hitbox_size = 13
+getgenv().hitbox_color = Color3.fromRGB(255, 0, 0)
+Main:Toggle({
+    Title = "Enable Hitbox Expander",
+    Desc = "Adds hitbox to all enemies",
+    Icon = "check",
+    Default = false,
+    Flag = "HitboxEnableToggle",
+    Callback = function(Value)
+        getgenv().hitbox_expander = Value
+        if getgenv().hitbox_expander then
+            FeatureActivated(true)
+        else
+            FeatureActivated(false)
+        end
+        if not getgenv().hitbox_expander then
+            for _, player in matchEnemies do
+                if player ~= Player then
+                    local character = player.Character
+                    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.CanCollide = false
+                        local hit_box = hrp:FindFirstChild("hit_box")
+                        if hit_box then hit_box:Destroy() end
+                    end
+                end
+            end
+            return
+        end
+        task.spawn(function()
+            while getgenv().hitbox_expander and task.wait(0.1) do
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= Player and player.Character then
+                        local character = player.Character
+                        local hrp = character:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local enemy = player.Team ~= Player.Team
+                            if enemy then
+                                hrp.Size = Vector3.new(getgenv().hitbox_size, getgenv().hitbox_size, getgenv().hitbox_size)
+                                hrp.CanCollide = true
+                                local hit_box = hrp:FindFirstChild("hit_box")
+                                if not hit_box then
+                                    local box_handle = Instance.new("BoxHandleAdornment")
+                                    box_handle.Name = "hit_box"
+                                    box_handle.Adornee = hrp
+                                    box_handle.AlwaysOnTop = true
+                                    box_handle.ZIndex = 10
+                                    box_handle.Size = hrp.Size
+                                    box_handle.Color3 = getgenv().hitbox_color
+                                    box_handle.Transparency = 0.8
+                                    box_handle.Parent = hrp
+                                else
+                                    hit_box.Size = hrp.Size
+                                end
+                            else
+                                hrp.Size = Vector3.new(2, 2, 1)
+                                hrp.CanCollide = false
+                                local hit_box = hrp:FindFirstChild("hit_box")
+                                if hit_box then hit_box:Destroy() end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+Main:Slider({
+    Title = "Hitbox Size",
+    Step = 1,
+    Flag = "HitboxSizeSlider",
+    Value = { Min = 5, Max = 100, Default = 13 },
+    Callback = function(size) getgenv().hitbox_size = size end
+})
+Main:Colorpicker({
+    Title = "Hitbox Color",
+    Default = Color3.fromRGB(255, 0, 0),
+    Transparency = 0,
+    Locked = false,
+    Flag = "HitboxColorPicker",
+    Callback = function(color) getgenv().hitbox_color = color end
+})
+
+Main:Space()
+getgenv().original_cooldowns = {}
+Main:Toggle({
+    Title = "Remove Gun Cooldown",
+    Desc = "You may need to re-equip your weapon for changes to apply",
+    Icon = "check",
+    Default = false,
+    Flag = "RemoveGunCooldownToggle",
+    Callback = function(Value)
+        getgenv().remove_gun_cooldown = Value
+        if getgenv().remove_gun_cooldown then
+            FeatureActivated(true)
+        else
+            FeatureActivated(false)
+        end
+        if Value then
+            getgenv().original_cooldowns = {}
+            task.spawn(function()
+                while getgenv().remove_gun_cooldown do
+                    task.wait(0.1)
+                    local tools = {}
+                    for _, container in ipairs({ Player:FindFirstChild("Backpack"), Player.Character }) do
+                        if container then
+                            for _, tool in ipairs(container:GetChildren()) do
+                                if tool:IsA("Tool") and tool:FindFirstChild("Fire") then
+                                    table.insert(tools, tool)
+                                end
+                            end
+                        end
+                    end
+                    for _, tool in ipairs(tools) do
+                        if getgenv().original_cooldowns[tool] == nil then
+                            getgenv().original_cooldowns[tool] = tool:GetAttribute("Cooldown")
+                        end
+                        if tool:GetAttribute("Cooldown") ~= 0 then
+                            tool:SetAttribute("Cooldown", 0)
+                        end
+                    end
+                end
+            end)
+        else
+            for tool, cooldown in pairs(getgenv().original_cooldowns) do
+                if tool and tool.Parent then
+                    tool:SetAttribute("Cooldown", cooldown)
+                end
+            end
+            getgenv().original_cooldowns = {}
+        end
+    end,
+})
+
+-- ======================== ESP TAB ========================
+local Esp = window:Tab({
+    Title = "Esp Highlights",
+    Icon = "eye",
+    Locked = false,
+})
+getgenv().esp_team_color = Color3.fromRGB(0, 255, 0)
+getgenv().esp_enemy_color = Color3.fromRGB(255, 0, 0)
+getgenv().esp_charms_highlighter = false
+local charms_esp = CoreGui:FindFirstChild("Highlights") or Instance.new("Folder")
+charms_esp.Name = "CharmsESP"
+charms_esp.Parent = CoreGui
+Esp:Toggle({
+    Title = "Enable Charms Highlighter",
+    Desc = "Highlights players full body",
+    Icon = "check",
+    Default = false,
+    Flag = "EspCharmsToggle",
+    Callback = function(Value)
+        getgenv().esp_charms_highlighter = Value
+        if not getgenv().esp_charms_highlighter then
+            FeatureActivated(false)
+            for _, esp_players in ipairs(charms_esp:GetChildren()) do
+                esp_players:Destroy()
+            end
+            return
+        else
+            FeatureActivated(true)
+        end
+        task.spawn(function()
+            while getgenv().esp_charms_highlighter do
+                task.wait(0.1)
+                for _, v in matchEnemies do
+                    if not getgenv().esp_charms_highlighter then break end
+                    if v ~= Player then
+                        local character = v.Character
+                        if character then
+                            local highlight = charms_esp:FindFirstChild(v.Name)
+                            if not highlight then
+                                highlight = Instance.new("Highlight")
+                                highlight.Name = v.Name
+                                highlight.FillTransparency = 0.6
+                                highlight.OutlineTransparency = 0.4
+                                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                highlight.Parent = charms_esp
+                            end
+                            local teamColor = (v.Team == Player.Team)
+                                and getgenv().esp_team_color
+                                or getgenv().esp_enemy_color
+                            highlight.FillColor = teamColor
+                            highlight.OutlineColor = teamColor
+                            highlight.Adornee = character
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+getgenv().esp_skeleton = false
+local skeleton_folder = CoreGui:FindFirstChild("Skeletons") or Instance.new("Folder")
+skeleton_folder.Name = "Skeletons"
+skeleton_folder.Parent = CoreGui
+Esp:Toggle({
+    Title = "Enable Skeletal Highlighter",
+    Desc = "Highlights players skeleton",
+    Icon = "check",
+    Default = false,
+    Flag = "EspSkeletonToggle",
+    Callback = function(Value)
+        getgenv().esp_skeleton = Value
+        local function cleanup()
+            for _, child in ipairs(skeleton_folder:GetChildren()) do
+                child:Destroy()
+            end
+        end
+        if not Value then
+            cleanup()
+            FeatureActivated(false)
+            return
+        else
+            FeatureActivated(true)
+        end
+        task.spawn(function()
+            local function createLine()
+                local line = Instance.new("LineHandleAdornment")
+                line.Thickness = 2
+                line.ZIndex = 10
+                line.AlwaysOnTop = true
+                return line
+            end
+            local bones = {
+                { "Head",       "UpperTorso" }, { "UpperTorso", "LowerTorso" },
+                { "UpperTorso", "LeftUpperArm" }, { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" },
+                { "UpperTorso", "RightUpperArm" }, { "RightUpperArm", "RightLowerArm" }, { "RightLowerArm", "RightHand" },
+                { "LowerTorso", "LeftUpperLeg" }, { "LeftUpperLeg", "LeftLowerLeg" }, { "LeftLowerLeg", "LeftFoot" },
+                { "LowerTorso", "RightUpperLeg" }, { "RightUpperLeg", "RightLowerLeg" }, { "RightLowerLeg", "RightFoot" }
+            }
+            while getgenv().esp_skeleton do
+                task.wait(0.1)
+                for _, v in matchEnemies do
+                    local char = v.Character
+                    local holder = skeleton_folder:FindFirstChild(v.Name)
+                    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                        if not holder then
+                            holder = Instance.new("Folder")
+                            holder.Name = v.Name
+                            holder.Parent = skeleton_folder
+                        end
+                        local color = (v.Team == Player.Team) and getgenv().esp_team_color or getgenv().esp_enemy_color
+                        for i, bonePair in ipairs(bones) do
+                            local p1, p2 = char:FindFirstChild(bonePair[1]), char:FindFirstChild(bonePair[2])
+                            if p1 and p2 then
+                                local line = holder:FindFirstChild(tostring(i)) or createLine()
+                                line.Name = tostring(i)
+                                line.Color3 = color
+                                line.Adornee = p1
+                                line.CFrame = CFrame.new(Vector3.zero, p1.CFrame:PointToObjectSpace(p2.Position))
+                                line.Length = (p1.Position - p2.Position).Magnitude
+                                line.Parent = holder
+                            end
+                        end
+                    elseif holder then
+                        holder:Destroy()
+                    end
+                end
+                for _, child in ipairs(skeleton_folder:GetChildren()) do
+                    if not Players:FindFirstChild(child.Name) then
+                        child:Destroy()
+                    end
+                end
+            end
+            cleanup()
+        end)
+    end
+})
+getgenv().esp_tracers = false
+local tracers_folder = CoreGui:FindFirstChild("Tracers") or Instance.new("Folder")
+tracers_folder.Name = "Tracers"
+tracers_folder.Parent = CoreGui
+local tracerConnection = nil
+Esp:Toggle({
+    Title = "Enable Tracers Highlighter",
+    Desc = "Draws lines from your character to others smoothly.",
+    Icon = "check",
+    Default = false,
+    Flag = "EspTracersToggle",
+    Callback = function(Value)
+        getgenv().esp_tracers = Value
+        local function cleanup()
+            for _, child in ipairs(tracers_folder:GetChildren()) do
+                child:Destroy()
+            end
+        end
+        if tracerConnection then
+            tracerConnection:Disconnect()
+            tracerConnection = nil
+        end
+        if not Value then
+            cleanup()
+            if FeatureActivated then FeatureActivated(false) end
+            return
+        else
+            if FeatureActivated then FeatureActivated(true) end
+        end
+        tracerConnection = RunService.RenderStepped:Connect(function()
+            if not getgenv().esp_tracers then
+                if tracerConnection then
+                    tracerConnection:Disconnect()
+                    tracerConnection = nil
+                end
+                cleanup()
+                return
+            end
+            local myChar = Player.Character
+            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                for _, v in ipairs(matchEnemies) do
+                    if v ~= Player and v.Parent then
+                        local char = v.Character
+                        local tracer = tracers_folder:FindFirstChild(v.Name)
+                        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                            if not tracer then
+                                tracer = Instance.new("LineHandleAdornment")
+                                tracer.Name = v.Name
+                                tracer.Thickness = 1.5
+                                tracer.ZIndex = 10
+                                tracer.AlwaysOnTop = true
+                                tracer.Parent = tracers_folder
+                            end
+                            local targetRoot = char.HumanoidRootPart
+                            local color = (v.Team == Player.Team) and getgenv().esp_team_color or getgenv().esp_enemy_color
+                            tracer.Color3 = color
+                            tracer.Adornee = workspace.Terrain
+                            tracer.CFrame = CFrame.lookAt(myRoot.Position, targetRoot.Position)
+                            tracer.Length = (myRoot.Position - targetRoot.Position).Magnitude
+                        elseif tracer then
+                            tracer:Destroy()
+                        end
+                    end
+                end
+            else
+                cleanup()
+            end
+            for _, child in ipairs(tracers_folder:GetChildren()) do
+                if not Players:FindFirstChild(child.Name) then
+                    child:Destroy()
+                end
+            end
+        end)
+    end
+})
+Esp:Colorpicker({
+    Title = "Team Color Highlight",
+    Desc = "Esp color for teammates",
+    Default = Color3.fromRGB(0, 255, 0),
+    Transparency = 0,
+    Locked = false,
+    Flag = "EspTeamColorPicker",
+    Callback = function(color) getgenv().esp_team_color = color end
+})
+Esp:Colorpicker({
+    Title = "Enemy Color Highlight",
+    Desc = "Esp color for enemies",
+    Default = Color3.fromRGB(255, 0, 0),
+    Transparency = 0,
+    Locked = false,
+    Flag = "EspEnemyColorPicker",
+    Callback = function(color) getgenv().esp_enemy_color = color end
+})
+
+-- ======================== KILL ALL TAB ========================
+local Killing = window:Tab({
+    Title = "Kill All",
+    Icon = "skull",
+    Locked = false,
+})
