@@ -921,3 +921,75 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
+local Ability = window:Tab({ Title = "Abilitys", Icon = "zap", Locked = false })
+getgenv().autoShroud = false
+getgenv().lowExecutorsShroud = false
+getgenv().shroudRate = 1
+local ConfigSuccess, Config = pcall(function() return require(game:GetService("ReplicatedStorage").Ability.AbilityConfig) end)
+local ActivateShroud = ReplicatedStorage.Ability:WaitForChild("ActivateShroud")
+local isLocked = (not ConfigSuccess)
+local originals = {
+    SprintCooldown = not isLocked and Config.SprintCooldown or 15,
+    DashCooldown = not isLocked and Config.DashCooldown or 6,
+    ShroudCooldown = not isLocked and Config.ShroudCooldown or 7,
+    SoulReapCombatDelay = not isLocked and Config.SoulReapCombatDelay or 0.35
+}
+if isLocked then uteuirhguh:Lock() end
+local function blind(targetPlayer)
+    local character = Players.LocalPlayer.Character
+    if targetPlayer and targetPlayer.Character and character then
+        local targetPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local root = character:FindFirstChild("HumanoidRootPart")
+        if targetPart and root then
+            local origin
+            local direction
+            if getgenv().lowExecutorsShroud then
+                origin = root.Position
+                direction = (targetPart.Position - origin).Unit
+                ActivateShroud:FireServer(origin, direction)
+            else
+                local s1, CharacterRayOrigin = pcall(function() return require(ReplicatedStorage.Modules.CharacterRayOrigin) end)
+                local s2, ShroudProjectileController = pcall(function() return require(ReplicatedStorage.Ability.ShroudProjectileController) end)
+                if s1 and s2 then
+                    origin = CharacterRayOrigin(character)
+                    direction = (targetPart.Position - origin).Unit
+                    ActivateShroud:FireServer(origin, direction)
+                    ShroudProjectileController(origin, direction)
+                else
+                    getgenv().lowExecutorsShroud = true
+                    origin = root.Position
+                    direction = (targetPart.Position - origin).Unit
+                    ActivateShroud:FireServer(origin, direction)
+                end
+            end
+        end
+    end
+end
+Ability:Toggle({ Title = "Auto Shroud All", Desc = "Automatically blinds all enemies in match", Value = false, Callback = function(state) getgenv().autoShroud = state end })
+Ability:Toggle({ Title = "Low Executor Mode", Desc = "Supports all executors, may not notice shroud box/sound but blinds enemy and saves FPS", Value = false, Callback = function(state) getgenv().lowExecutorsShroud = state end })
+Ability:Slider({ Title = "Amount of Shrouds per Enemy", Desc = "Adjust firing rate per enemy, a high number increases fps for entire game", Step = 0.1, Value = { Min = 1, Max = 10000, Default = 1 }, Callback = function(value) getgenv().shroudRate = value end })
+task.spawn(function()
+    while true do
+        if getgenv().autoShroud then
+            for _, p in matchEnemies do blind(p) end
+            task.wait(1 / getgenv().shroudRate)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+Ability:Space()
+task.spawn(function() if not isLocked then lockedParagraph:Destroy() end end)
+Ability:Toggle({ Title = "Remove Sprint Cooldown", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.SprintCooldown = state and 0 or originals.SprintCooldown else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remove Dash Cooldown", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.DashCooldown = state and 0 or originals.DashCooldown else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remove Shroud Cooldown", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.ShroudCooldown = state and 0 or originals.ShroudCooldown else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remove Soul Reap Combat Delay", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.SoulReapCombatDelay = state and 0 or originals.SoulReapCombatDelay else NotSupportedFeature() end end })
+Ability:Space()
+Ability:Slider({ Title = "Sprint Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.SprintTime or 0 }, Callback = function(value) if not isLocked then Config.SprintTime = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Sprint Boost", Step = 0.1, Locked = isLocked, Value = { Min = 0, Max = 5, Default = not isLocked and Config.SprintBoost or 0 }, Callback = function(value) if not isLocked then Config.SprintBoost = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Soul Reap Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.SoulReapTime }, Callback = function(value) if not isLocked then Config.SoulReapTime = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Soul Reap Speed Boost", Step = 0.1, Locked = isLocked, Value = { Min = 0.1, Max = 10, Default = not isLocked and Config.SoulReapSpeedBoost or 0 }, Callback = function(value) if not isLocked then Config.SoulReapSpeedBoost = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Propeller Jump Boost", Step = 0.1, Locked = isLocked, Value = { Min = 0.1, Max = 5, Default = not isLocked and Config.PropellerJumpBoost or 0 }, Callback = function(value) if not isLocked then Config.PropellerJumpBoost = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Shroud Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.ShroudTime or 0 }, Callback = function(value) if not isLocked then Config.ShroudTime = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Shroud Projectile Speed", Step = 2.5, Locked = isLocked, Value = { Min = 2.5, Max = 100, Default = not isLocked and Config.ShroudProjectileSpeed or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileSpeed = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Shroud Projectile Range", Step = 5, Locked = isLocked, Value = { Min = 5, Max = 1000, Default = not isLocked and Config.ShroudProjectileRange or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileRange = value else NotSupportedFeature() end end })
