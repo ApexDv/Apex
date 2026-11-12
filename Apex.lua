@@ -993,3 +993,321 @@ Ability:Slider({ Title = "Propeller Jump Boost", Step = 0.1, Locked = isLocked, 
 Ability:Slider({ Title = "Shroud Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.ShroudTime or 0 }, Callback = function(value) if not isLocked then Config.ShroudTime = value else NotSupportedFeature() end end })
 Ability:Slider({ Title = "Shroud Projectile Speed", Step = 2.5, Locked = isLocked, Value = { Min = 2.5, Max = 100, Default = not isLocked and Config.ShroudProjectileSpeed or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileSpeed = value else NotSupportedFeature() end end })
 Ability:Slider({ Title = "Shroud Projectile Range", Step = 5, Locked = isLocked, Value = { Min = 5, Max = 1000, Default = not isLocked and Config.ShroudProjectileRange or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileRange = value else NotSupportedFeature() end end })
+local Teleport = window:Tab({ Title = "Teleport", Icon = "map-pin", Locked = false })
+local lobby = workspace:WaitForChild("Lobby")
+local groups = { DuelRing_1v1 = 1, DuelRing_2v2 = 2, DuelRing_3v3 = 3, DuelRing_4v4 = 4 }
+local autoWalkToDuelPad = false
+local currentPadModel = nil
+local lastJumpTime = 0
+local function walkTo(model)
+    local character = Player.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if humanoid and rootPart and model and model.PrimaryPart then
+        local targetPosition = model.PrimaryPart.Position
+        local distance = (rootPart.Position - targetPosition).Magnitude
+        if distance <= 6 then
+            getgenv().noclip = false
+            for _, part in ipairs(character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
+            return
+        end
+        humanoid.WalkSpeed = 35
+        humanoid:MoveTo(targetPosition)
+        if os.clock() - lastJumpTime >= 2 then humanoid.Jump = true; lastJumpTime = os.clock() end
+        getgenv().noclip = true
+        for _, part in ipairs(character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+    end
+end
+Teleport:Toggle({ Title = "Enable auto walk to duel pads", Desc = "Automatically walks to an available duel pad accurately", Default = false, Flag = "AutoWalkDuelPadToggle", Callback = function(value) autoWalkToDuelPad = value end })
+Teleport:Space()
+task.spawn(function()
+    while true do
+        if not Player:GetAttribute("Match") then
+            if autoWalkToDuelPad then
+                local character = Player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if currentPadModel and rootPart then
+                    local currentMaxCount = 1
+                    for groupName, maxCount in pairs(groups) do
+                        if lobby:FindFirstChild("DuelRingsGroup") and lobby.DuelRingsGroup:FindFirstChild(groupName) then
+                            if lobby.DuelRingsGroup[groupName]:FindFirstChild(currentPadModel.Name) then currentMaxCount = maxCount; break end
+                        end
+                    end
+                    if currentMaxCount == 1 then
+                        local opponentFound = false
+                        for _, otherPlayer in ipairs(game:GetService("Players"):GetPlayers()) do
+                            if otherPlayer ~= Player and otherPlayer.Character then
+                                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                if otherRoot then
+                                    local dist = (rootPart.Position - otherRoot.Position).Magnitude
+                                    if dist <= 8 then opponentFound = true; break end
+                                end
+                            end
+                        end
+                        if not opponentFound then currentPadModel = nil end
+                    end
+                end
+                if currentPadModel and rootPart then
+                    local stillValid = false
+                    for _, groupFolder in ipairs(lobby:GetChildren()) do
+                        if groupFolder.Name == "DuelRingsGroup" then
+                            for groupName, maxCount in pairs(groups) do
+                                local ringFolder = groupFolder:FindFirstChild(groupName)
+                                if ringFolder and ringFolder:FindFirstChild(currentPadModel.Name) then
+                                    local totalPlayersInGroup = 0
+                                    local maxPlayersForGroup = maxCount * 2
+                                    local targetedPadStillNeedsPlayer = false
+                                    for _, model in ipairs(ringFolder:GetChildren()) do
+                                        if model:IsA("Model") and model.Name == "DuelPad" then
+                                            local count = model:GetAttribute("CharacterCount") or 0
+                                            totalPlayersInGroup = totalPlayersInGroup + count
+                                            if model == currentPadModel and count < maxCount then targetedPadStillNeedsPlayer = true end
+                                        end
+                                    end
+                                    if (totalPlayersInGroup == maxPlayersForGroup - 1 and targetedPadStillNeedsPlayer) or (totalPlayersInGroup == maxPlayersForGroup) then stillValid = true end
+                                    break
+                                end
+                            end
+                        end
+                        if stillValid then break end
+                    end
+                    if not stillValid then currentPadModel = nil end
+                end
+                if not currentPadModel then
+                    local foundNewPad = false
+                    for _, groupFolder in ipairs(lobby:GetChildren()) do
+                        if groupFolder.Name == "DuelRingsGroup" then
+                            for groupName, maxCount in pairs(groups) do
+                                local ringFolder = groupFolder:FindFirstChild(groupName)
+                                if ringFolder then
+                                    local pads = {}
+                                    local totalPlayersInGroup = 0
+                                    local maxPlayersForGroup = maxCount * 2
+                                    for _, model in ipairs(ringFolder:GetChildren()) do
+                                        if model:IsA("Model") and model.Name == "DuelPad" then
+                                            local count = model:GetAttribute("CharacterCount") or 0
+                                            totalPlayersInGroup = totalPlayersInGroup + count
+                                            table.insert(pads, { model = model, count = count })
+                                        end
+                                    end
+                                    if totalPlayersInGroup == maxPlayersForGroup - 1 then
+                                        for _, pad in ipairs(pads) do
+                                            if pad.count < maxCount then
+                                                local opponentReady = true
+                                                if maxCount == 1 then
+                                                    opponentReady = false
+                                                    for _, otherPlayer in ipairs(game:GetService("Players"):GetPlayers()) do
+                                                        if otherPlayer ~= Player and otherPlayer.Character then
+                                                            local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                                            if otherRoot and pad.model.PrimaryPart then
+                                                                local dist = (otherRoot.Position - pad.model.PrimaryPart.Position).Magnitude
+                                                                if dist <= 8 then opponentReady = true; break end
+                                                            end
+                                                        end
+                                                    end
+                                                end
+                                                if opponentReady then
+                                                    walkTo(pad.model)
+                                                    if rootPart and pad.model.PrimaryPart then
+                                                        local distance = (rootPart.Position - pad.model.PrimaryPart.Position).Magnitude
+                                                        if distance <= 6 then currentPadModel = pad.model end
+                                                    end
+                                                    foundNewPad = true
+                                                    task.wait(0.5)
+                                                    break
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                                if foundNewPad then break end
+                            end
+                        end
+                        if foundNewPad then break end
+                    end
+                end
+            else
+                currentPadModel = nil
+            end
+        else
+            currentPadModel = nil
+        end
+        task.wait(0.2)
+    end
+end)
+if lobby and lobby:FindFirstChild("DuelRingsGroup") then
+    for groupName, _ in pairs(groups) do
+        local ringFolder = lobby.DuelRingsGroup:FindFirstChild(groupName)
+        if ringFolder then
+            local padIndex = 1
+            for _, model in ipairs(ringFolder:GetChildren()) do
+                if model:IsA("Model") and model.Name == "DuelPad" then
+                    local sideName = (padIndex % 2 == 1) and "Right" or "Left"
+                    local cleanTitle = "Walk to " .. groupName .. " " .. sideName
+                    Teleport:Button({
+                        Title = cleanTitle,
+                        Locked = false,
+                        Callback = function()
+                            wind:Notify({ Title = "Walking to position!", Content = "Enjoying APEX?", Duration = 3, Icon = "rbxassetid://139687752061139" })
+                            walkTo(model)
+                        end
+                    })
+                    padIndex = padIndex + 1
+                end
+            end
+        end
+    end
+end
+
+local fov = window:Tab({ Title = "FOV Shooting", Icon = "crosshair", Locked = false })
+local fov_autoshoot_enabled = false
+local fov_manualShoot_enabled = false
+local fov_circle_enabled = false
+local fov_radius = 100
+local fov_shoot_cooldown = 1
+local fov_last_shot = 0
+local fov_circle = nil
+local fov_gunController = nil
+local fov_autoshoot_toggle = nil
+local fov_manual_toggle = nil
+local function createFovCircle()
+    if fov_circle then fov_circle:Remove() end
+    fov_circle = Drawing.new("Circle")
+    fov_circle.Thickness = 2
+    fov_circle.NumSides = 64
+    fov_circle.Radius = fov_radius
+    fov_circle.Color = Color3.fromRGB(255, 255, 255)
+    fov_circle.Transparency = 1
+    fov_circle.Visible = false
+    fov_circle.Filled = false
+end
+createFovCircle()
+local function update_fov_circle()
+    if fov_circle and (fov_circle_enabled or fov_autoshoot_enabled or fov_manualShoot_enabled) then
+        local mouse_pos = UserInputService:GetMouseLocation()
+        fov_circle.Position = Vector2.new(mouse_pos.X, mouse_pos.Y)
+        fov_circle.Radius = fov_radius
+        fov_circle.Visible = true
+    elseif fov_circle then
+        fov_circle.Visible = false
+    end
+end
+local function is_in_fov(target_position)
+    local screen_pos, on_screen = Camera:WorldToViewportPoint(target_position)
+    if not on_screen then return false end
+    local mouse_pos = UserInputService:GetMouseLocation()
+    local distance = math.sqrt((screen_pos.X - mouse_pos.X) ^ 2 + (screen_pos.Y - mouse_pos.Y) ^ 2)
+    return distance <= fov_radius
+end
+local function has_clear_los(from_pos, to_pos, target_character)
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = { Player.Character, target_character }
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local result = Workspace:Raycast(from_pos, (to_pos - from_pos), params)
+    if result then if not result.Instance:IsDescendantOf(target_character) then return false end end
+    return true
+end
+local function valid_enemy(enemy)
+    if not enemy or enemy == Player then return false end
+    local character = enemy.Character
+    if not character or character.Parent ~= Workspace then return false end
+    if enemy.Team and enemy.Team == Player.Team then return false end
+    local humanoid = character:FindFirstChild("Humanoid")
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local my_hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+    if not (humanoid and hrp and my_hrp) then return false end
+    if humanoid.Health <= 0 then return false end
+    if Collection:HasTag(character, "Invulnerable") or Collection:HasTag(character, "SpeedTrail") then return false end
+    return true
+end
+local function shoot_enemy(target)
+    local my_char = Player.Character
+    local my_root = my_char and my_char:FindFirstChild("HumanoidRootPart")
+    local target_hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    if not (my_root and target_hrp) then return false end
+    if not has_clear_los(my_root.Position, target_hrp.Position, target.Character) then return false end
+    if not is_in_fov(target_hrp.Position) then return false end
+    local current_time = tick()
+    if current_time - fov_last_shot < fov_shoot_cooldown then return false end
+    local hit_part = target.Character:FindFirstChild("LowerTorso") or target.Character:FindFirstChild("UpperTorso") or target.Character:FindFirstChild("Head")
+    if hit_part then
+        ShootGun(target)
+        fov_last_shot = current_time
+        return true
+    end
+    return false
+end
+RunService.Heartbeat:Connect(function()
+    update_fov_circle()
+    if not fov_autoshoot_enabled then return end
+    local my_char = Player.Character
+    if not my_char then return end
+    for _, enemy in pairs(Players:GetPlayers()) do
+        if valid_enemy(enemy) then
+            if shoot_enemy(enemy) then break end
+        end
+    end
+end)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if fov_manualShoot_enabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local current_time = tick()
+        if current_time - fov_last_shot < fov_shoot_cooldown then return end
+        local my_char = Player.Character
+        if not my_char then return end
+        for _, enemy in pairs(Players:GetPlayers()) do
+            if valid_enemy(enemy) then
+                if shoot_enemy(enemy) then break end
+            end
+        end
+    end
+end)
+local function start_gun_controller_loop()
+    if fov_gunController then task.cancel(fov_gunController) end
+    fov_gunController = task.spawn(function()
+        while fov_manualShoot_enabled do
+            task.wait()
+            local gun_controller = Workspace:FindFirstChild(Player.Name)
+            if gun_controller then
+                local controller = gun_controller:FindFirstChild("GunController")
+                if controller then controller.Parent = nil end
+            end
+        end
+    end)
+end
+local function stop_gun_controller_loop()
+    if fov_gunController then task.cancel(fov_gunController); fov_gunController = nil end
+end
+fov:Toggle({ Title = "Enable FOV Circle", Desc = "Show FOV circle around your mouse", Default = false, Flag = "EnableFovCircle", Callback = function(value) fov_circle_enabled = value end })
+fov_autoshoot_toggle = fov:Toggle({ Title = "Autoshoot FOV", Desc = "Automatically shoots enemies in your FOV circle", Default = false, Flag = "EnableAutoshootFov", Callback = function(value) fov_autoshoot_enabled = value; if value then if fov_manual_toggle then fov_manual_toggle:Lock() end else if fov_manual_toggle then fov_manual_toggle:Unlock() end end end })
+fov_manual_toggle = fov:Toggle({ Title = "FOV Manual Shoot", Desc = "Click to shoot enemies in FOV circle", Default = false, Flag = "EnableManualShootToggle", Callback = function(value) fov_manualShoot_enabled = value; if value then if fov_autoshoot_toggle then fov_autoshoot_toggle:Lock() end; start_gun_controller_loop() else if fov_autoshoot_toggle then fov_autoshoot_toggle:Unlock() end; stop_gun_controller_loop() end end })
+fov:Slider({ Title = "FOV Circle Size", Step = 5, Flag = "FovCircleSizeSlider", Value = { Min = 35, Max = 300, Default = 100 }, Callback = function(value) fov_radius = value end })
+fov:Slider({ Title = "FOV Autoshoot Cooldown", Step = 0.1, Flag = "FovAutoshootCooldownSlider", Value = { Min = 0, Max = 5, Default = 2 }, Callback = function(value) fov_shoot_cooldown = value end })
+
+local Misc = window:Tab({ Title = "Misc", Icon = "folder", Locked = false })
+getgenv().original_speed = 16
+getgenv().speed_enabled = false
+getgenv().current_speed = 16
+getgenv().remove_gun_cooldown = false
+Misc:Toggle({ Title = "Auto Spin", Desc = "Auto spins for you when not in match", Default = false, Callback = function(state) getgenv().autoSpin = state; task.spawn(function() while getgenv().autoSpin do if not Player:GetAttribute("Match") then local SpinnerService = require(game:GetService("ReplicatedStorage").Dailies.SpinnerService); SpinnerService.Spin() end; task.wait(0.1) end end) end })
+Misc:Toggle({ Title = "Noclip", Desc = "Allows you to walk through walls", Default = false, Callback = function(state) getgenv().noclip = state; if state then FeatureActivated(true); local noclipLoop; noclipLoop = game:GetService("RunService").Stepped:Connect(function() if not getgenv().noclip then noclipLoop:Disconnect(); return end; local char = Player.Character; if char then for _, part in ipairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end end end) else FeatureActivated(false) end end })
+Misc:Toggle({ Title = "Enable Speed Changer", Desc = "Changes your walk speed", Icon = "check", Default = false, Flag = "SpeedChangerToggle", Callback = function(Value) getgenv().speed_enabled = Value; if Value then task.spawn(function() while getgenv().speed_enabled do local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid and humanoid.WalkSpeed ~= getgenv().current_speed then humanoid.WalkSpeed = getgenv().current_speed end; task.wait(0.1) end end) else local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid then humanoid.WalkSpeed = getgenv().original_speed end end end })
+Misc:Slider({ Title = "Walk Speed", Step = 1, Value = { Min = 16, Max = 200, Default = 16 }, Flag = "SpeedChangerSlider", Callback = function(speed) getgenv().current_speed = speed; if getgenv().speed_enabled then local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid then humanoid.WalkSpeed = speed end end end })
+Player.CharacterAdded:Connect(function(character) task.wait(0.2); if getgenv().speed_enabled then local humanoid = character:WaitForChild("Humanoid"); humanoid.WalkSpeed = getgenv().current_speed end end)
+
+local Settings = window:Tab({ Title = "Settings", Icon = "settings", Locked = false })
+local themeNames = {}
+for name in pairs(wind.Themes) do table.insert(themeNames, name) end
+table.sort(themeNames)
+Settings:Dropdown({ Title = "Themes", Desc = "Select a theme", Flag = "SelectedTheme", Values = themeNames, Value = "Dark", Callback = function(option) wind:SetTheme(option) end })
+Settings:Keybind({ Title = "Keybind", Desc = "Keybind to open ui", Value = "LeftControl", Flag = "KeybindOpenWindow", Callback = function(v) window:SetToggleKey(Enum.KeyCode[v]) end })
+Settings:Space()
+local ConfigManager = window.ConfigManager
+local CurrentConfigName = "default"
+local ConfigNameInput = Settings:Input({ Title = "Config Name", Value = CurrentConfigName, Callback = function(value) CurrentConfigName = value end })
+local ConfigDropdown = Settings:Dropdown({ Title = "All Configs", Values = ConfigManager:AllConfigs(), Callback = function(value) CurrentConfigName = value; ConfigNameInput:Set(value) end })
+Settings:Button({ Title = "Save Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Save() then ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end end })
+Settings:Button({ Title = "Load Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Load() then end end })
+Settings:Button({ Title = "Delete Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); config:Delete(); ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end })
+wind:Notify({ Title = "Welcome to APEX | MVSD", Duration = 15, Icon = "rbxassetid://139687752061139" })
