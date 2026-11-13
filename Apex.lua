@@ -1187,8 +1187,8 @@ end
 createFovCircle()
 local function update_fov_circle()
     if fov_circle and (fov_circle_enabled or fov_autoshoot_enabled or fov_manualShoot_enabled) then
-        local mouse_pos = UserInputService:GetMouseLocation()
-        fov_circle.Position = Vector2.new(mouse_pos.X, mouse_pos.Y)
+        local screen_center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        fov_circle.Position = screen_center
         fov_circle.Radius = fov_radius
         fov_circle.Visible = true
     elseif fov_circle then
