@@ -52,8 +52,8 @@ local Welcome = window:Tab({
     Locked = false,
 })
 Welcome:Paragraph({
-    Title = "Welcome to APEX",
-    Desc = "We hope you find this script useful, if you find any issues please report them below.",
+    Title = " BEM-VINDO À APEX",
+    Desc = "O melhor script para dominar o servidor. Entre no nosso Discord para novidades e atualizações.",
     Color = Color3.fromHex("#1756B8"),
     Thumbnail = "rbxassetid://114305907211721",
     ThumbnailSize = 150,
