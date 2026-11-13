@@ -7,7 +7,7 @@ getgenv().ApexMvsdExecuted = true
 local wind = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local window = wind:CreateWindow({
     Title = "APEX | MVSD",
-    Icon = "rbxassetid://139687752061139",
+    Icon = "rbxassetid://114305907211721",
     Author = "by APEX",
     Folder = "ApexMvsdScript",
     Size = UDim2.fromOffset(650, 430),
@@ -29,7 +29,7 @@ local window = wind:CreateWindow({
 })
 window:EditOpenButton({
     Title = "APEX",
-    Icon = "rbxassetid://139687752061139",
+    Icon = "rbxassetid://114305907211721",
     CornerRadius = UDim.new(0, 16),
     StrokeThickness = 2,
     Color = ColorSequence.new(
@@ -55,7 +55,7 @@ Welcome:Paragraph({
     Title = "Welcome to APEX",
     Desc = "We hope you find this script useful, if you find any issues please report them below.",
     Color = Color3.fromHex("#1756B8"),
-    Thumbnail = "rbxassetid://139687752061139",
+    Thumbnail = "rbxassetid://114305907211721",
     ThumbnailSize = 150,
     Buttons = {
         {
@@ -1310,4 +1310,4 @@ local ConfigDropdown = Settings:Dropdown({ Title = "All Configs", Values = Confi
 Settings:Button({ Title = "Save Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Save() then ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end end })
 Settings:Button({ Title = "Load Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Load() then end end })
 Settings:Button({ Title = "Delete Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); config:Delete(); ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end })
-wind:Notify({ Title = "Welcome to APEX | MVSD", Duration = 15, Icon = "rbxassetid://139687752061139" })
+wind:Notify({ Title = "Welcome to APEX | MVSD", Duration = 15, Icon = "rbxassetid://114305907211721" })
