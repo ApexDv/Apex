@@ -62,7 +62,9 @@ Welcome:Paragraph({
             Icon = "square-arrow-out-up-right",
             Title = "Copy Our Discord",
             Callback = function()
-            end,
+    setclipboard("https://discord.gg/aNsWdE6nN")
+    wind:Notify({Title = "Copiado!", Content = "Link copiado!", Duration = 3})
+end,
         }
     }
 })
