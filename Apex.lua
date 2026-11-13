@@ -85,7 +85,11 @@ local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local Camera = Workspace.CurrentCamera
 local Player = Players.LocalPlayer
-
+task.spawn(function()
+    while task.wait(5) do
+        limparArmasDoChao()
+    end
+end)
 getgenv().match = false
 local canShoot = true
 local matchEnemies = {}
@@ -150,7 +154,13 @@ task.spawn(function()
         end
     end
 end)
-
+local function limparArmasDoChao()
+    for _, v in ipairs(workspace:GetChildren()) do
+        if v:IsA("Tool") then
+            v:Destroy()
+        end
+    end
+end
 local function getGun()
     local character = Player.Character
     local locations = { Player:FindFirstChild("Backpack") }
