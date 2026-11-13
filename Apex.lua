@@ -263,17 +263,31 @@ local function ShootGun(target)
     local origin = CharacterRayOrigin(myChar)
     if not origin then return end
     local hitPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+    
+    -- Pega a arma
     local tool = getGun()
-    if not tool then return end
+    
+    -- AQUI É A TRAVA: Se não tiver arma, ele cancela o tiro
+    if not tool then return end 
+    
     if hitPart then
         canShoot = false
         local targetPos = hitPart.Position
-        local muzzle = tool:FindFirstChild("Muzzle", true)
-        local startPos = muzzle and muzzle.WorldPosition or origin
+        
+        local startPos = origin
+        if tool then
+            local muzzle = tool:FindFirstChild("Muzzle", true)
+            if muzzle then startPos = muzzle.WorldPosition end
+        end
+
         BulletRenderer(startPos, targetPos)
         ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos, hitPart, targetPos)
-        local sound = tool and tool:FindFirstChild("Fire")
-        if sound and sound:IsA("Sound") then sound:Play() end
+        
+        if tool then
+            local sound = tool:FindFirstChild("Fire")
+            if sound and sound:IsA("Sound") then sound:Play() end
+        end
+        
         task.delay(2.5, function() canShoot = true end)
     end
 end
