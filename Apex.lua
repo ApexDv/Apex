@@ -779,7 +779,7 @@ Esp:Colorpicker({ Title = "Cor do Inimigo", Desc = "Cor do ESP para inimigos.", 
 local Killing = window:Tab({ Title = "Kill All", Icon = "skull", Locked = false })
 getgenv().autoKillGun = false
 Killing:Button({
-    Title = "[ARMA] Matar todos (Uma vez)",
+    Title = "[Gun] Matar todos",
     Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
@@ -804,7 +804,7 @@ Killing:Button({
     end
 })
 Killing:Toggle({
-    Title = "[ARMA] Matar todos (Auto)",
+    Title = "[Gun] Matar todos",
     Desc = "Fica eliminando todos os jogadores sem parar usando a arma.",
     Value = false,
     Callback = function(state)
@@ -835,7 +835,7 @@ task.spawn(function()
 end)
 getgenv().autoKillKnife = false
 Killing:Button({
-    Title = "[FACA] Matar todos (Uma vez)",
+    Title = "[Knife] Matar todos (uma vez)",
     Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
@@ -860,7 +860,7 @@ Killing:Button({
     end
 })
 Killing:Toggle({
-    Title = "[FACA] Matar todos (Auto)",
+    Title = "[Knife] Matar todos",
     Desc = "Fica eliminando todos os jogadores sem parar usando a faca.",
     Value = false,
     Callback = function(state)
@@ -1129,7 +1129,7 @@ if lobby and lobby:FindFirstChild("DuelRingsGroup") then
     end
 end
 
-local fov = window:Tab({ Title = "FOV Shooting", Icon = "crosshair", Locked = false })
+local fov = window:Tab({ Title = "Shooting", Icon = "crosshair", Locked = false })
 local fov_autoshoot_enabled = false
 local fov_manualShoot_enabled = false
 local fov_circle_enabled = false
