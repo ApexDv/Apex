@@ -45,7 +45,7 @@ local gunDropped = false
 
 -- Create Window
 local Window = Rayfield:CreateWindow({
-    Name = "RZO Hub | Murder Mystery 2",
+    Name = "APEX | Murder Mystery 2",
     LoadingTitle = "RZO Hub Loading...",
     LoadingSubtitle = "Murder Mystery ESP",
     ConfigurationSaving = {
@@ -63,7 +63,7 @@ local Window = Rayfield:CreateWindow({
 
 -- Notification
 Rayfield:Notify({
-    Title = "RZO Hub",
+    Title = "APEX Hub",
     Content = "Murder Mystery ESP Loaded Successfully!",
     Duration = 5,
     Image = 4483362458,
