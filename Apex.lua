@@ -20,22 +20,14 @@ local window = wind:CreateWindow({
     BackgroundImageTransparency = 0.42,
     HideSearchBar = true,
     ScrollBarEnabled = false,
-    User = {
-        Enabled = true,
-        Anonymous = true,
-        Callback = function()
-        end,
-    },
+    User = { Enabled = true, Anonymous = true, Callback = function() end },
 })
 window:EditOpenButton({
     Title = "APEX",
     Icon = "rbxassetid://114305907211721",
     CornerRadius = UDim.new(0, 16),
     StrokeThickness = 2,
-    Color = ColorSequence.new(
-        Color3.fromHex("0A1128"),
-        Color3.fromHex("4B0082")
-    ),
+    Color = ColorSequence.new(Color3.fromHex("0A1128"), Color3.fromHex("4B0082")),
     OnlyMobile = false,
     Enabled = true,
     Draggable = true,
@@ -60,23 +52,23 @@ Welcome:Paragraph({
     Buttons = {
         {
             Icon = "square-arrow-out-up-right",
-            Title = "Copy Our Discord",
+            Title = "Copiar Nosso Discord",
             Callback = function()
-    setclipboard("https://discord.gg/aNsWdE6nN")
-    wind:Notify({Title = "Copiado!", Content = "Link copiado!", Duration = 3})
-end,
+                setclipboard("https://discord.gg/aNsWdE6nN")
+                wind:Notify({Title = "Copiado!", Content = "Link do Discord copiado.", Duration = 3})
+            end,
         }
     }
 })
 local lockedParagraph = Welcome:Paragraph({
-    Title = "Unsupported Executor",
-    Desc = "You are currently using an unsupported executor (Solara/Xeno). Certain features have been restricted by our automated system to ensure stability. To unlock full functionality and access all available tools, please switch to a recommended executor (Velocity/Madium)!",
+    Title = "Executor Não Suportado",
+    Desc = "Você está usando um executor não suportado (Solara/Xeno). Alguns recursos foram limitados para garantir a estabilidade. Mude para um executor recomendado (Velocity/Madium) para desbloquear tudo!",
     Color = "Red",
     Locked = false
 })
 Welcome:Paragraph({
-    Title = "Changelogs and Patches",
-    Desc = "You may view our latest changelogs and patches right in our discord server!",
+    Title = "Atualizações",
+    Desc = "Você pode ver as últimas atualizações e correções no nosso servidor do Discord!",
     Color = "Green",
     Locked = false
 })
@@ -101,15 +93,12 @@ local matchEnemies = {}
 task.spawn(function()
     while true do
         if Player then
-            if Player:GetAttribute("Match") then
-                getgenv().match = true
-            else
-                getgenv().match = false
-            end
+            getgenv().match = Player:GetAttribute("Match") and true or false
         end
         task.wait(0.1)
     end
 end)
+
 task.spawn(function()
     while task.wait(0.1) do
         local currentMatch = Player:GetAttribute("Match")
@@ -127,6 +116,7 @@ task.spawn(function()
         matchEnemies = tempTable
     end
 end)
+
 task.spawn(function()
     local lastGunTracked = nil
     local soundConnection = nil
@@ -139,8 +129,7 @@ task.spawn(function()
             if container then
                 for _, tool in ipairs(container:GetChildren()) do
                     if tool:IsA("Tool") and tool:FindFirstChild("Fire") and tool:FindFirstChild("Reload") then
-                        gun = tool
-                        break
+                        gun = tool; break
                     end
                 end
             end
@@ -152,17 +141,12 @@ task.spawn(function()
                 if soundConnection then soundConnection:Disconnect() end
                 local fireSound = gun:FindFirstChild("Fire")
                 if fireSound and fireSound:IsA("Sound") then
-                    soundConnection = fireSound.Played:Connect(function()
-                        lastFiredTime = tick()
-                    end)
+                    soundConnection = fireSound.Played:Connect(function() lastFiredTime = tick() end)
                 end
             end
         else
             lastGunTracked = nil
-            if soundConnection then
-                soundConnection:Disconnect()
-                soundConnection = nil
-            end
+            if soundConnection then soundConnection:Disconnect(); soundConnection = nil end
         end
     end
 end)
@@ -190,10 +174,7 @@ local function equipGun()
     if not humanoid or humanoid.Health <= 0 then return false end
     if getgenv().match then
         local gun = getGun()
-        if gun then
-            humanoid:EquipTool(gun)
-            return true
-        end
+        if gun then humanoid:EquipTool(gun); return true end
     end
     return false
 end
@@ -206,114 +187,92 @@ local function equipKnife()
     if getgenv().match then
         for _, tool in ipairs(backpack:GetChildren()) do
             if tool:IsA("Tool") and tool:GetAttribute("EquipAnimation") == "Knife_Equip" then
-                humanoid:EquipTool(tool)
-                return true
+                humanoid:EquipTool(tool); return true
             end
         end
     end
     return false
 end
+
 local BulletRendererColor = Color3.fromRGB(255, 255, 255)
 local function BulletRenderer(origin, targetPos)
     local function CreatePseudoPart(cf)
         local p = Instance.new("Part")
-        p.Size = Vector3.new(0.1, 0.1, 0.1)
-        p.Transparency = 1
-        p.CanCollide = false
-        p.CanQuery = false
-        p.CanTouch = false
-        p.Anchored = true
-        p.CFrame = cf
-        p.Parent = workspace
+        p.Size = Vector3.new(0.1, 0.1, 0.1); p.Transparency = 1; p.CanCollide = false
+        p.CanQuery = false; p.CanTouch = false; p.Anchored = true; p.CFrame = cf; p.Parent = workspace
         return p
     end
     local startPart = CreatePseudoPart(CFrame.lookAt(origin, targetPos) * CFrame.new(0, 0, -1))
     local endPart = CreatePseudoPart(CFrame.new(targetPos))
     local beam = Instance.new("Beam")
-    beam.Texture = ""
-    beam.TextureLength = 1
-    beam.TextureMode = Enum.TextureMode.Stretch
-    beam.TextureSpeed = 0
-    beam.Color = ColorSequence.new(BulletRendererColor)
-    beam.LightEmission = 1
-    beam.LightInfluence = 0
-    beam.Brightness = 5
-    beam.Width0 = 0
-    beam.Width1 = 0
-    local att0 = Instance.new("Attachment", startPart)
-    local att1 = Instance.new("Attachment", endPart)
-    beam.Attachment0 = att0
-    beam.Attachment1 = att1
-    beam.Parent = startPart
+    beam.Texture = ""; beam.TextureLength = 1; beam.TextureMode = Enum.TextureMode.Stretch
+    beam.TextureSpeed = 0; beam.Color = ColorSequence.new(BulletRendererColor)
+    beam.LightEmission = 1; beam.LightInfluence = 0; beam.Brightness = 5
+    beam.Width0 = 0; beam.Width1 = 0
+    local att0 = Instance.new("Attachment", startPart); local att1 = Instance.new("Attachment", endPart)
+    beam.Attachment0 = att0; beam.Attachment1 = att1; beam.Parent = startPart
     local fadeIn = TweenService:Create(beam, TweenInfo.new(0.05, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), { Width0 = 0.3, Width1 = 0.6 })
     local fadeOut = TweenService:Create(beam, TweenInfo.new(0.1, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), { Width0 = 0, Width1 = 0 })
-    fadeIn:Play()
-    fadeIn.Completed:Connect(function() fadeOut:Play() end)
-    Debris:AddItem(startPart, 0.3)
-    Debris:AddItem(endPart, 0.3)
+    fadeIn:Play(); fadeIn.Completed:Connect(function() fadeOut:Play() end)
+    Debris:AddItem(startPart, 0.3); Debris:AddItem(endPart, 0.3)
 end
+
 local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
 end
+
 local function ShootGun(target)
     local myChar = Player.Character
     if not myChar then return end
     local origin = CharacterRayOrigin(myChar)
     if not origin then return end
     local hitPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
-    
-    -- Pega a arma
     local tool = getGun()
-    
-    -- AQUI É A TRAVA: Se não tiver arma, ele cancela o tiro
     if not tool then return end 
-    
     if hitPart then
         canShoot = false
         local targetPos = hitPart.Position
-        
         local startPos = origin
         if tool then
             local muzzle = tool:FindFirstChild("Muzzle", true)
             if muzzle then startPos = muzzle.WorldPosition end
         end
-
         BulletRenderer(startPos, targetPos)
         ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos, hitPart, targetPos)
-        
         if tool then
             local sound = tool:FindFirstChild("Fire")
             if sound and sound:IsA("Sound") then sound:Play() end
         end
-        
         task.delay(2.5, function() canShoot = true end)
     end
 end
+
 local lastNotify = 0
 local function NotSupportedFeature()
     local currentTime = tick()
     if currentTime - lastNotify >= 5 then
         lastNotify = currentTime
-        wind:Notify({ Title = "Uh Oh! Executor not supported!", Content = "Sorry! Your executor isn't supported to run this feature.", Duration = 3, Icon = "rbxassetid://139687752061139" })
-        wind:Notify({ Title = "Notice!", Content = "If your on PC/Laptop, try using Velocity, on Android/Ios please try using Delta!", Duration = 3, Icon = "rbxassetid://139687752061139" })
+        wind:Notify({ Title = "Executor não suportado!", Content = "Seu executor não suporta esse recurso.", Duration = 3, Icon = "rbxassetid://114305907211721" })
+        wind:Notify({ Title = "Aviso!", Content = "Se você usa PC, tente o Velocity. No celular, tente o Delta!", Duration = 3, Icon = "rbxassetid://114305907211721" })
     end
 end
+
 local function FeatureActivated(boolean)
     if boolean then
-        wind:Notify({ Title = "Activated Feature!!", Content = "Enjoying APEX? Join our discord server!", Duration = 3, Icon = "rbxassetid://114305907211721" })
+        wind:Notify({ Title = "SISTEMA ATIVADO", Content = "Módulo de combate iniciado.", Duration = 3, Icon = "rbxassetid://114305907211721" })
     else
-        wind:Notify({ Title = "Disabled Feature!!", Content = "Enjoying APEX? Join our discord server!", Duration = 3, Icon = "rbxassetid://114305907211721" })
+        wind:Notify({ Title = "SISTEMA DESATIVADO", Content = "Módulo de combate encerrado.", Duration = 3, Icon = "rbxassetid://114305907211721" })
     end
 end
 
 local Main = window:Tab({ Title = "Main", Icon = "house", Locked = false })
-local ConfigurationSection = Main:Section({ Title = "Configuration", Opened = true })
+local ConfigurationSection = Main:Section({ Title = "Configuração", Opened = true })
 local autounanchor = false
 ConfigurationSection:Toggle({
-    Title = "Auto UnAnchor Character",
-    Desc = "Lets you bypass the 5 second wait before the match starts",
+    Title = "Pular Contagem (Unanchor)",
+    Desc = "Bypassa a espera de 5 segundos antes da partida começar.",
     Icon = "check",
     Default = false,
     Flag = "AutoAunacnchorToggle",
@@ -334,8 +293,8 @@ ConfigurationSection:Toggle({
     end
 })
 ConfigurationSection:Colorpicker({
-    Title = "Bullet Tracer Color",
-    Desc = "Changes the color of your bullet tracer",
+    Title = "Cor do Traçante",
+    Desc = "Muda a cor do rastro da bala.",
     Flag = "BulletTracerColorPicker",
     Default = BulletRendererColor,
     Locked = false,
@@ -348,8 +307,8 @@ getgenv().max_distance = 300
 getgenv().autoshoot_cooldown = 2
 local autoshoot_thread = nil
 Main:Toggle({
-    Title = "Enable Autoshoot",
-    Desc = "This will automatically shoot enemies for you blatantly.",
+    Title = "Autoshoot",
+    Desc = "Atira automaticamente nos inimigos na sua frente.",
     Icon = "check",
     Default = false,
     Flag = "EnableAutoShootToggle",
@@ -384,8 +343,7 @@ Main:Toggle({
                                     local onDifferentTeam = (not enemy.Team or enemy.Team ~= Player.Team)
                                     local isVisibleInFov = (Camera.CFrame.LookVector:Dot((hrp.Position - Camera.CFrame.Position).Unit) >= 0.9)
                                     if onDifferentTeam and isVisibleInFov then
-                                        closestDistance = dist
-                                        closestTarget = enemy
+                                        closestDistance = dist; closestTarget = enemy
                                     end
                                 end
                             end
@@ -402,8 +360,8 @@ Main:Toggle({
         end
     end
 })
-Main:Slider({ Title = "Autoshoot Max Distance", Step = 1, Flag = "AutoshootMaxDistanceSlider", Value = { Min = 0, Max = 1000, Default = 300 }, Callback = function(value) getgenv().max_distance = value end })
-Main:Slider({ Title = "Cooldown", Step = 0.5, Flag = "AutoshootCooldownSlider", Value = { Min = 0.5, Max = 10, Default = 2 }, Callback = function(value) getgenv().autoshoot_cooldown = value end })
+Main:Slider({ Title = "Distância Máxima", Step = 1, Flag = "AutoshootMaxDistanceSlider", Value = { Min = 0, Max = 1000, Default = 300 }, Callback = function(value) getgenv().max_distance = value end })
+Main:Slider({ Title = "Cooldown do Tiro", Step = 0.5, Flag = "AutoshootCooldownSlider", Value = { Min = 0.5, Max = 10, Default = 2 }, Callback = function(value) getgenv().autoshoot_cooldown = value end })
 Main:Space()
 
 getgenv().auto_throw_enabled = false
@@ -430,8 +388,8 @@ local function throwKnife(targetChar)
     lastThrowTime = tick()
 end
 local uteuirhguh = Main:Toggle({
-    Title = "Enable auto throw knife",
-    Desc = "Automatically throws your knife at enemies",
+    Title = "Auto Arremessar Faca",
+    Desc = "Joga a faca automaticamente nos inimigos.",
     Default = false,
     Callback = function(Value)
         getgenv().auto_throw_enabled = Value
@@ -471,8 +429,8 @@ local uteuirhguh = Main:Toggle({
         end
     end
 })
-Main:Slider({ Title = "Max Throw Distance", Value = { Min = 0, Max = 1000, Default = 300 }, Callback = function(v) getgenv().max_distance = v end })
-Main:Slider({ Title = "Cooldown", Value = { Min = 0.5, Max = 10, Default = 2 }, Callback = function(v) getgenv().throw_cooldown = v end })
+Main:Slider({ Title = "Distância da Faca", Value = { Min = 0, Max = 1000, Default = 300 }, Callback = function(v) getgenv().max_distance = v end })
+Main:Slider({ Title = "Cooldown da Faca", Value = { Min = 0.5, Max = 10, Default = 2 }, Callback = function(v) getgenv().throw_cooldown = v end })
 Main:Space()
 
 getgenv().triggerbot_enabled = false
@@ -487,7 +445,7 @@ local function triggerbot_valid_enemy(enemy)
     local hrp = character:FindFirstChild("HumanoidRootPart")
     local my_hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
     if not (humanoid and hrp and my_hrp) then return false end
-    if humanoid.Health <= 0 then return false end
+        if humanoid.Health <= 0 then return false end
     if Collection:HasTag(character, "Invulnerable") or Collection:HasTag(character, "SpeedTrail") then return false end
     return true
 end
@@ -525,7 +483,7 @@ RunService.Heartbeat:Connect(function()
 end)
 Main:Toggle({
     Title = "Trigger Bot",
-    Desc = "Automatically shoots when your mouse hovers over an enemy",
+    Desc = "Atira automaticamente quando você mira em um inimigo.",
     Icon = "check",
     Default = false,
     Flag = "TriggerBotToggle",
@@ -534,15 +492,14 @@ Main:Toggle({
         if getgenv().triggerbot_enabled then FeatureActivated(true) else FeatureActivated(false) end
     end
 })
-Main:Slider({ Title = "Trigger Bot Cooldown", Step = 0.1, Flag = "TriggerBotCooldownSlider", Value = { Min = 0, Max = 3, Default = 1 }, Callback = function(value) getgenv().triggerbot_cooldown = value end })
+Main:Slider({ Title = "Cooldown do Trigger", Step = 0.1, Flag = "TriggerBotCooldownSlider", Value = { Min = 0, Max = 3, Default = 1 }, Callback = function(value) getgenv().triggerbot_cooldown = value end })
 Main:Space()
-
 getgenv().hitbox_expander = false
 getgenv().hitbox_size = 13
 getgenv().hitbox_color = Color3.fromRGB(255, 0, 0)
 Main:Toggle({
-    Title = "Enable Hitbox Expander",
-    Desc = "Adds hitbox to all enemies",
+    Title = "Hitbox Expander",
+    Desc = "Aumenta a hitbox de todos os inimigos para você acertar mais fácil.",
     Icon = "check",
     Default = false,
     Flag = "HitboxEnableToggle",
@@ -602,13 +559,13 @@ Main:Toggle({
         end)
     end
 })
-Main:Slider({ Title = "Hitbox Size", Step = 1, Flag = "HitboxSizeSlider", Value = { Min = 5, Max = 100, Default = 13 }, Callback = function(size) getgenv().hitbox_size = size end })
-Main:Colorpicker({ Title = "Hitbox Color", Default = Color3.fromRGB(255, 0, 0), Transparency = 0, Locked = false, Flag = "HitboxColorPicker", Callback = function(color) getgenv().hitbox_color = color end })
+Main:Slider({ Title = "Tamanho da Hitbox", Step = 1, Flag = "HitboxSizeSlider", Value = { Min = 5, Max = 100, Default = 13 }, Callback = function(size) getgenv().hitbox_size = size end })
+Main:Colorpicker({ Title = "Cor da Hitbox", Default = Color3.fromRGB(255, 0, 0), Transparency = 0, Locked = false, Flag = "HitboxColorPicker", Callback = function(color) getgenv().hitbox_color = color end })
 Main:Space()
 getgenv().original_cooldowns = {}
 Main:Toggle({
-    Title = "Remove Gun Cooldown",
-    Desc = "You may need to re-equip your weapon for changes to apply",
+    Title = "Remover Cooldown da Arma",
+    Desc = "Zera o tempo de espera entre os tiros. Pode precisar reequipar a arma.",
     Icon = "check",
     Default = false,
     Flag = "RemoveGunCooldownToggle",
@@ -621,7 +578,7 @@ Main:Toggle({
                 while getgenv().remove_gun_cooldown do
                     task.wait(0.1)
                     local tools = {}
-                                                for _, container in ipairs({ Player:FindFirstChild("Backpack"), Player.Character }) do
+                    for _, container in ipairs({ Player:FindFirstChild("Backpack"), Player.Character }) do
                         if container then
                             for _, tool in ipairs(container:GetChildren()) do
                                 if tool:IsA("Tool") and tool:FindFirstChild("Fire") then 
@@ -631,25 +588,20 @@ Main:Toggle({
                         end
                     end
                     for _, tool in ipairs(tools) do
-                        if getgenv().original_cooldowns[tool] == nil then 
-                            getgenv().original_cooldowns[tool] = tool:GetAttribute("Cooldown") 
-                        end
-                        if tool:GetAttribute("Cooldown") ~= 0 then 
-                            tool:SetAttribute("Cooldown", 0) 
-                        end
+                        if getgenv().original_cooldowns[tool] == nil then getgenv().original_cooldowns[tool] = tool:GetAttribute("Cooldown") end
+                        if tool:GetAttribute("Cooldown") ~= 0 then tool:SetAttribute("Cooldown", 0) end
                     end
                 end
             end)
         else
             for tool, cooldown in pairs(getgenv().original_cooldowns) do
-                if tool and tool.Parent then 
-                    tool:SetAttribute("Cooldown", cooldown) 
-                end
+                if tool and tool.Parent then tool:SetAttribute("Cooldown", cooldown) end
             end
             getgenv().original_cooldowns = {}
         end
     end,
 })
+
 local Esp = window:Tab({ Title = "Esp Highlights", Icon = "eye", Locked = false })
 getgenv().esp_team_color = Color3.fromRGB(0, 255, 0)
 getgenv().esp_enemy_color = Color3.fromRGB(255, 0, 0)
@@ -658,8 +610,8 @@ local charms_esp = CoreGui:FindFirstChild("Highlights") or Instance.new("Folder"
 charms_esp.Name = "CharmsESP"
 charms_esp.Parent = CoreGui
 Esp:Toggle({
-    Title = "Enable Charms Highlighter",
-    Desc = "Highlights players full body",
+    Title = "ESP Corpo Inteiro",
+    Desc = "Destaca o corpo inteiro dos jogadores.",
     Icon = "check",
     Default = false,
     Flag = "EspCharmsToggle",
@@ -705,8 +657,8 @@ local skeleton_folder = CoreGui:FindFirstChild("Skeletons") or Instance.new("Fol
 skeleton_folder.Name = "Skeletons"
 skeleton_folder.Parent = CoreGui
 Esp:Toggle({
-    Title = "Enable Skeletal Highlighter",
-    Desc = "Highlights players skeleton",
+    Title = "ESP Esqueleto",
+    Desc = "Mostra os ossos e articulações dos inimigos.",
     Icon = "check",
     Default = false,
     Flag = "EspSkeletonToggle",
@@ -767,8 +719,8 @@ tracers_folder.Name = "Tracers"
 tracers_folder.Parent = CoreGui
 local tracerConnection = nil
 Esp:Toggle({
-    Title = "Enable Tracers Highlighter",
-    Desc = "Draws lines from your character to others smoothly.",
+    Title = "ESP Tracers",
+    Desc = "Desenha linhas do seu personagem até os inimigos.",
     Icon = "check",
     Default = false,
     Flag = "EspTracersToggle",
@@ -821,21 +773,21 @@ Esp:Toggle({
         end)
     end
 })
-Esp:Colorpicker({ Title = "Team Color Highlight", Desc = "Esp color for teammates", Default = Color3.fromRGB(0, 255, 0), Transparency = 0, Locked = false, Flag = "EspTeamColorPicker", Callback = function(color) getgenv().esp_team_color = color end })
-Esp:Colorpicker({ Title = "Enemy Color Highlight", Desc = "Esp color for enemies", Default = Color3.fromRGB(255, 0, 0), Transparency = 0, Locked = false, Flag = "EspEnemyColorPicker", Callback = function(color) getgenv().esp_enemy_color = color end })
+Esp:Colorpicker({ Title = "Cor do Time", Desc = "Cor do ESP para aliados.", Default = Color3.fromRGB(0, 255, 0), Transparency = 0, Locked = false, Flag = "EspTeamColorPicker", Callback = function(color) getgenv().esp_team_color = color end })
+Esp:Colorpicker({ Title = "Cor do Inimigo", Desc = "Cor do ESP para inimigos.", Default = Color3.fromRGB(255, 0, 0), Transparency = 0, Locked = false, Flag = "EspEnemyColorPicker", Callback = function(color) getgenv().esp_enemy_color = color end })
 
 local Killing = window:Tab({ Title = "Kill All", Icon = "skull", Locked = false })
 getgenv().autoKillGun = false
 Killing:Button({
-    Title = "[GUN] Kill all players once",
-    Desc = "Kills all players in your server once",
+    Title = "[ARMA] Matar todos (Uma vez)",
+    Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
         if getgenv().match then
             local myMatch = Player:GetAttribute("Match")
             if myMatch then
                 equipGun()
-                wind:Notify({ Title = "Killing all players!", Content = "Enjoying APEX?", Duration = 3, Icon = "rbxassetid://139687752061139" })
+                wind:Notify({ Title = "Matança Iniciada", Content = "Eliminando todos com a arma.", Duration = 3, Icon = "rbxassetid://114305907211721" })
                 for _, plr in matchEnemies do
                     if plr.Team ~= Player.Team and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                         local target = plr.Character.HumanoidRootPart
@@ -852,8 +804,8 @@ Killing:Button({
     end
 })
 Killing:Toggle({
-    Title = "[GUN] Auto kill all players",
-    Desc = "Kills everyone constantly in your server with gun",
+    Title = "[ARMA] Matar todos (Auto)",
+    Desc = "Fica eliminando todos os jogadores sem parar usando a arma.",
     Value = false,
     Callback = function(state)
         getgenv().autoKillGun = state
@@ -883,15 +835,15 @@ task.spawn(function()
 end)
 getgenv().autoKillKnife = false
 Killing:Button({
-    Title = "[KNIFE] Kill all players once",
-    Desc = "Kills all players in your server once",
+    Title = "[FACA] Matar todos (Uma vez)",
+    Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
         if getgenv().match then
             local myMatch = Player:GetAttribute("Match")
             if myMatch then
                 equipKnife()
-                wind:Notify({ Title = "Killing all players!", Content = "Enjoying APEX?", Duration = 3, Icon = "rbxassetid://139687752061139" })
+                wind:Notify({ Title = "Matança Iniciada", Content = "Eliminando todos com a faca.", Duration = 3, Icon = "rbxassetid://114305907211721" })
                 for _, target in ipairs(Players:GetPlayers()) do
                     if target ~= Player and target.Character then
                         local humanoid = target.Character:FindFirstChild("Humanoid")
@@ -908,8 +860,8 @@ Killing:Button({
     end
 })
 Killing:Toggle({
-    Title = "[KNIFE] Auto kill all players",
-    Desc = "Kills everyone constantly in your server with knife",
+    Title = "[FACA] Matar todos (Auto)",
+    Desc = "Fica eliminando todos os jogadores sem parar usando a faca.",
     Value = false,
     Callback = function(state)
         getgenv().autoKillKnife = state
@@ -981,9 +933,9 @@ local function blind(targetPlayer)
         end
     end
 end
-Ability:Toggle({ Title = "Auto Shroud All", Desc = "Automatically blinds all enemies in match", Value = false, Callback = function(state) getgenv().autoShroud = state end })
-Ability:Toggle({ Title = "Low Executor Mode", Desc = "Supports all executors, may not notice shroud box/sound but blinds enemy and saves FPS", Value = false, Callback = function(state) getgenv().lowExecutorsShroud = state end })
-Ability:Slider({ Title = "Amount of Shrouds per Enemy", Desc = "Adjust firing rate per enemy, a high number increases fps for entire game", Step = 0.1, Value = { Min = 1, Max = 10000, Default = 1 }, Callback = function(value) getgenv().shroudRate = value end })
+Ability:Toggle({ Title = "Cegar Todos (Auto)", Desc = "Cega automaticamente todos os inimigos da partida.", Value = false, Callback = function(state) getgenv().autoShroud = state end })
+Ability:Toggle({ Title = "Modo Leve (Anti-Lag)", Desc = "Funciona em qualquer executor. Pode não mostrar o efeito, mas cega e salva FPS.", Value = false, Callback = function(state) getgenv().lowExecutorsShroud = state end })
+Ability:Slider({ Title = "Qtd. de Cegueira por Inimigo", Desc = "Ajusta a taxa de disparo. Valores altos podem causar lag.", Step = 0.1, Value = { Min = 1, Max = 10000, Default = 1 }, Callback = function(value) getgenv().shroudRate = value end })
 task.spawn(function()
     while true do
         if getgenv().autoShroud then
@@ -996,19 +948,20 @@ task.spawn(function()
 end)
 Ability:Space()
 task.spawn(function() if not isLocked then lockedParagraph:Destroy() end end)
-Ability:Toggle({ Title = "Remove Sprint Cooldown", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.SprintCooldown = state and 0 or originals.SprintCooldown else NotSupportedFeature() end end })
-Ability:Toggle({ Title = "Remove Dash Cooldown", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.DashCooldown = state and 0 or originals.DashCooldown else NotSupportedFeature() end end })
-Ability:Toggle({ Title = "Remove Shroud Cooldown", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.ShroudCooldown = state and 0 or originals.ShroudCooldown else NotSupportedFeature() end end })
-Ability:Toggle({ Title = "Remove Soul Reap Combat Delay", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.SoulReapCombatDelay = state and 0 or originals.SoulReapCombatDelay else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remover Cooldown do Sprint", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.SprintCooldown = state and 0 or originals.SprintCooldown else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remover Cooldown do Dash", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.DashCooldown = state and 0 or originals.DashCooldown else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remover Cooldown do Shroud", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.ShroudCooldown = state and 0 or originals.ShroudCooldown else NotSupportedFeature() end end })
+Ability:Toggle({ Title = "Remover Delay do Soul Reap", Locked = isLocked, Value = false, Callback = function(state) if state then FeatureActivated(true) else FeatureActivated(false) end; if not isLocked then Config.SoulReapCombatDelay = state and 0 or originals.SoulReapCombatDelay else NotSupportedFeature() end end })
 Ability:Space()
-Ability:Slider({ Title = "Sprint Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.SprintTime or 0 }, Callback = function(value) if not isLocked then Config.SprintTime = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Sprint Boost", Step = 0.1, Locked = isLocked, Value = { Min = 0, Max = 5, Default = not isLocked and Config.SprintBoost or 0 }, Callback = function(value) if not isLocked then Config.SprintBoost = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Soul Reap Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.SoulReapTime }, Callback = function(value) if not isLocked then Config.SoulReapTime = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Soul Reap Speed Boost", Step = 0.1, Locked = isLocked, Value = { Min = 0.1, Max = 10, Default = not isLocked and Config.SoulReapSpeedBoost or 0 }, Callback = function(value) if not isLocked then Config.SoulReapSpeedBoost = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Propeller Jump Boost", Step = 0.1, Locked = isLocked, Value = { Min = 0.1, Max = 5, Default = not isLocked and Config.PropellerJumpBoost or 0 }, Callback = function(value) if not isLocked then Config.PropellerJumpBoost = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Shroud Time", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.ShroudTime or 0 }, Callback = function(value) if not isLocked then Config.ShroudTime = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Shroud Projectile Speed", Step = 2.5, Locked = isLocked, Value = { Min = 2.5, Max = 100, Default = not isLocked and Config.ShroudProjectileSpeed or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileSpeed = value else NotSupportedFeature() end end })
-Ability:Slider({ Title = "Shroud Projectile Range", Step = 5, Locked = isLocked, Value = { Min = 5, Max = 1000, Default = not isLocked and Config.ShroudProjectileRange or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileRange = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Tempo do Sprint", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.SprintTime or 0 }, Callback = function(value) if not isLocked then Config.SprintTime = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Velocidade do Sprint", Step = 0.1, Locked = isLocked, Value = { Min = 0, Max = 5, Default = not isLocked and Config.SprintBoost or 0 }, Callback = function(value) if not isLocked then Config.SprintBoost = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Tempo do Soul Reap", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.SoulReapTime }, Callback = function(value) if not isLocked then Config.SoulReapTime = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Velocidade do Soul Reap", Step = 0.1, Locked = isLocked, Value = { Min = 0.1, Max = 10, Default = not isLocked and Config.SoulReapSpeedBoost or 0 }, Callback = function(value) if not isLocked then Config.SoulReapSpeedBoost = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Impulso do Propeller", Step = 0.1, Locked = isLocked, Value = { Min = 0.1, Max = 5, Default = not isLocked and Config.PropellerJumpBoost or 0 }, Callback = function(value) if not isLocked then Config.PropellerJumpBoost = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Tempo do Shroud", Step = 0.5, Locked = isLocked, Value = { Min = 0.5, Max = 10, Default = not isLocked and Config.ShroudTime or 0 }, Callback = function(value) if not isLocked then Config.ShroudTime = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Velocidade do Projétil Shroud", Step = 2.5, Locked = isLocked, Value = { Min = 2.5, Max = 100, Default = not isLocked and Config.ShroudProjectileSpeed or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileSpeed = value else NotSupportedFeature() end end })
+Ability:Slider({ Title = "Alcance do Shroud", Step = 5, Locked = isLocked, Value = { Min = 5, Max = 1000, Default = not isLocked and Config.ShroudProjectileRange or 0 }, Callback = function(value) if not isLocked then Config.ShroudProjectileRange = value else NotSupportedFeature() end end })
+
 local Teleport = window:Tab({ Title = "Teleport", Icon = "map-pin", Locked = false })
 local lobby = workspace:WaitForChild("Lobby")
 local groups = { DuelRing_1v1 = 1, DuelRing_2v2 = 2, DuelRing_3v3 = 3, DuelRing_4v4 = 4 }
@@ -1035,7 +988,7 @@ local function walkTo(model)
         for _, part in ipairs(character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
 end
-Teleport:Toggle({ Title = "Enable auto walk to duel pads", Desc = "Automatically walks to an available duel pad accurately", Default = false, Flag = "AutoWalkDuelPadToggle", Callback = function(value) autoWalkToDuelPad = value end })
+Teleport:Toggle({ Title = "Andar Auto para Duelos", Desc = "Anda sozinho até uma arena de duelo disponível.", Default = false, Flag = "AutoWalkDuelPadToggle", Callback = function(value) autoWalkToDuelPad = value end })
 Teleport:Space()
 task.spawn(function()
     while true do
@@ -1159,13 +1112,13 @@ if lobby and lobby:FindFirstChild("DuelRingsGroup") then
             local padIndex = 1
             for _, model in ipairs(ringFolder:GetChildren()) do
                 if model:IsA("Model") and model.Name == "DuelPad" then
-                    local sideName = (padIndex % 2 == 1) and "Right" or "Left"
-                    local cleanTitle = "Walk to " .. groupName .. " " .. sideName
+                    local sideName = (padIndex % 2 == 1) and "Direita" or "Esquerda"
+                    local cleanTitle = "Ir para " .. groupName .. " " .. sideName
                     Teleport:Button({
                         Title = cleanTitle,
                         Locked = false,
                         Callback = function()
-                            wind:Notify({ Title = "Walking to position!", Content = "Enjoying APEX?", Duration = 3, Icon = "rbxassetid://139687752061139" })
+                            wind:Notify({ Title = "Indo para o local", Content = "Movendo até a arena de duelo.", Duration = 3, Icon = "rbxassetid://114305907211721" })
                             walkTo(model)
                         end
                     })
@@ -1244,7 +1197,7 @@ local function shoot_enemy(target)
     if not (my_root and target_hrp) then return false end
     if not has_clear_los(my_root.Position, target_hrp.Position, target.Character) then return false end
     if not is_in_fov(target_hrp.Position) then return false end
-    local current_time = tick()
+        local current_time = tick()
     if current_time - fov_last_shot < fov_shoot_cooldown then return false end
     local hit_part = target.Character:FindFirstChild("LowerTorso") or target.Character:FindFirstChild("UpperTorso") or target.Character:FindFirstChild("Head")
     if hit_part then
@@ -1295,35 +1248,35 @@ end
 local function stop_gun_controller_loop()
     if fov_gunController then task.cancel(fov_gunController); fov_gunController = nil end
 end
-fov:Toggle({ Title = "Enable FOV Circle", Desc = "Show FOV circle around your mouse", Default = false, Flag = "EnableFovCircle", Callback = function(value) fov_circle_enabled = value end })
-fov_autoshoot_toggle = fov:Toggle({ Title = "Autoshoot FOV", Desc = "Automatically shoots enemies in your FOV circle", Default = false, Flag = "EnableAutoshootFov", Callback = function(value) fov_autoshoot_enabled = value; if value then if fov_manual_toggle then fov_manual_toggle:Lock() end else if fov_manual_toggle then fov_manual_toggle:Unlock() end end end })
-fov_manual_toggle = fov:Toggle({ Title = "FOV Manual Shoot", Desc = "Click to shoot enemies in FOV circle", Default = false, Flag = "EnableManualShootToggle", Callback = function(value) fov_manualShoot_enabled = value; if value then if fov_autoshoot_toggle then fov_autoshoot_toggle:Lock() end; start_gun_controller_loop() else if fov_autoshoot_toggle then fov_autoshoot_toggle:Unlock() end; stop_gun_controller_loop() end end })
-fov:Slider({ Title = "FOV Circle Size", Step = 5, Flag = "FovCircleSizeSlider", Value = { Min = 35, Max = 300, Default = 100 }, Callback = function(value) fov_radius = value end })
-fov:Slider({ Title = "FOV Autoshoot Cooldown", Step = 0.1, Flag = "FovAutoshootCooldownSlider", Value = { Min = 0, Max = 5, Default = 2 }, Callback = function(value) fov_shoot_cooldown = value end })
+fov:Toggle({ Title = "Mostrar Círculo FOV", Desc = "Mostra o círculo do FOV na tela.", Default = false, Flag = "EnableFovCircle", Callback = function(value) fov_circle_enabled = value end })
+fov_autoshoot_toggle = fov:Toggle({ Title = "Autoshoot FOV", Desc = "Atira automaticamente em quem estiver no círculo.", Default = false, Flag = "EnableAutoshootFov", Callback = function(value) fov_autoshoot_enabled = value; if value then if fov_manual_toggle then fov_manual_toggle:Lock() end else if fov_manual_toggle then fov_manual_toggle:Unlock() end end end })
+fov_manual_toggle = fov:Toggle({ Title = "Tiro Manual FOV", Desc = "Clique na tela para acertar quem está no círculo.", Default = false, Flag = "EnableManualShootToggle", Callback = function(value) fov_manualShoot_enabled = value; if value then if fov_autoshoot_toggle then fov_autoshoot_toggle:Lock() end; start_gun_controller_loop() else if fov_autoshoot_toggle then fov_autoshoot_toggle:Unlock() end; stop_gun_controller_loop() end end })
+fov:Slider({ Title = "Tamanho do FOV", Step = 5, Flag = "FovCircleSizeSlider", Value = { Min = 35, Max = 300, Default = 100 }, Callback = function(value) fov_radius = value end })
+fov:Slider({ Title = "Cooldown do FOV", Step = 0.1, Flag = "FovAutoshootCooldownSlider", Value = { Min = 0, Max = 5, Default = 2 }, Callback = function(value) fov_shoot_cooldown = value end })
 
 local Misc = window:Tab({ Title = "Misc", Icon = "folder", Locked = false })
 getgenv().original_speed = 16
 getgenv().speed_enabled = false
 getgenv().current_speed = 16
 getgenv().remove_gun_cooldown = false
-Misc:Toggle({ Title = "Auto Spin", Desc = "Auto spins for you when not in match", Default = false, Callback = function(state) getgenv().autoSpin = state; task.spawn(function() while getgenv().autoSpin do if not Player:GetAttribute("Match") then local SpinnerService = require(game:GetService("ReplicatedStorage").Dailies.SpinnerService); SpinnerService.Spin() end; task.wait(0.1) end end) end })
-Misc:Toggle({ Title = "Noclip", Desc = "Allows you to walk through walls", Default = false, Callback = function(state) getgenv().noclip = state; if state then FeatureActivated(true); local noclipLoop; noclipLoop = game:GetService("RunService").Stepped:Connect(function() if not getgenv().noclip then noclipLoop:Disconnect(); return end; local char = Player.Character; if char then for _, part in ipairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end end end) else FeatureActivated(false) end end })
-Misc:Toggle({ Title = "Enable Speed Changer", Desc = "Changes your walk speed", Icon = "check", Default = false, Flag = "SpeedChangerToggle", Callback = function(Value) getgenv().speed_enabled = Value; if Value then task.spawn(function() while getgenv().speed_enabled do local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid and humanoid.WalkSpeed ~= getgenv().current_speed then humanoid.WalkSpeed = getgenv().current_speed end; task.wait(0.1) end end) else local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid then humanoid.WalkSpeed = getgenv().original_speed end end end })
-Misc:Slider({ Title = "Walk Speed", Step = 1, Value = { Min = 16, Max = 200, Default = 16 }, Flag = "SpeedChangerSlider", Callback = function(speed) getgenv().current_speed = speed; if getgenv().speed_enabled then local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid then humanoid.WalkSpeed = speed end end end })
+Misc:Toggle({ Title = "Auto Girar Roleta", Desc = "Gira a roleta automaticamente quando você não está em partida.", Default = false, Callback = function(state) getgenv().autoSpin = state; task.spawn(function() while getgenv().autoSpin do if not Player:GetAttribute("Match") then local SpinnerService = require(game:GetService("ReplicatedStorage").Dailies.SpinnerService); SpinnerService.Spin() end; task.wait(0.1) end end) end })
+Misc:Toggle({ Title = "Noclip", Desc = "Permite atravessar paredes e obstáculos.", Default = false, Callback = function(state) getgenv().noclip = state; if state then FeatureActivated(true); local noclipLoop; noclipLoop = game:GetService("RunService").Stepped:Connect(function() if not getgenv().noclip then noclipLoop:Disconnect(); return end; local char = Player.Character; if char then for _, part in ipairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end end end) else FeatureActivated(false) end end })
+Misc:Toggle({ Title = "Mudar Velocidade", Desc = "Aumenta ou diminui a velocidade do personagem.", Icon = "check", Default = false, Flag = "SpeedChangerToggle", Callback = function(Value) getgenv().speed_enabled = Value; if Value then task.spawn(function() while getgenv().speed_enabled do local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid and humanoid.WalkSpeed ~= getgenv().current_speed then humanoid.WalkSpeed = getgenv().current_speed end; task.wait(0.1) end end) else local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid then humanoid.WalkSpeed = getgenv().original_speed end end end })
+Misc:Slider({ Title = "Velocidade de Caminhada", Step = 1, Value = { Min = 16, Max = 200, Default = 16 }, Flag = "SpeedChangerSlider", Callback = function(speed) getgenv().current_speed = speed; if getgenv().speed_enabled then local character = Player.Character; local humanoid = character and character:FindFirstChild("Humanoid"); if humanoid then humanoid.WalkSpeed = speed end end end })
 Player.CharacterAdded:Connect(function(character) task.wait(0.2); if getgenv().speed_enabled then local humanoid = character:WaitForChild("Humanoid"); humanoid.WalkSpeed = getgenv().current_speed end end)
 
 local Settings = window:Tab({ Title = "Settings", Icon = "settings", Locked = false })
 local themeNames = {}
 for name in pairs(wind.Themes) do table.insert(themeNames, name) end
 table.sort(themeNames)
-Settings:Dropdown({ Title = "Themes", Desc = "Select a theme", Flag = "SelectedTheme", Values = themeNames, Value = "Dark", Callback = function(option) wind:SetTheme(option) end })
-Settings:Keybind({ Title = "Keybind", Desc = "Keybind to open ui", Value = "LeftControl", Flag = "KeybindOpenWindow", Callback = function(v) window:SetToggleKey(Enum.KeyCode[v]) end })
+Settings:Dropdown({ Title = "Temas", Desc = "Selecione o tema do menu.", Flag = "SelectedTheme", Values = themeNames, Value = "Dark", Callback = function(option) wind:SetTheme(option) end })
+Settings:Keybind({ Title = "Atalho do Menu", Desc = "Tecla para abrir a interface.", Value = "LeftControl", Flag = "KeybindOpenWindow", Callback = function(v) window:SetToggleKey(Enum.KeyCode[v]) end })
 Settings:Space()
 local ConfigManager = window.ConfigManager
 local CurrentConfigName = "default"
-local ConfigNameInput = Settings:Input({ Title = "Config Name", Value = CurrentConfigName, Callback = function(value) CurrentConfigName = value end })
-local ConfigDropdown = Settings:Dropdown({ Title = "All Configs", Values = ConfigManager:AllConfigs(), Callback = function(value) CurrentConfigName = value; ConfigNameInput:Set(value) end })
-Settings:Button({ Title = "Save Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Save() then ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end end })
-Settings:Button({ Title = "Load Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Load() then end end })
-Settings:Button({ Title = "Delete Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); config:Delete(); ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end })
-wind:Notify({ Title = "Welcome to APEX | MVSD", Duration = 15, Icon = "rbxassetid://114305907211721" })
+local ConfigNameInput = Settings:Input({ Title = "Nome da Config", Value = CurrentConfigName, Callback = function(value) CurrentConfigName = value end })
+local ConfigDropdown = Settings:Dropdown({ Title = "Todas as Configs", Values = ConfigManager:AllConfigs(), Callback = function(value) CurrentConfigName = value; ConfigNameInput:Set(value) end })
+Settings:Button({ Title = "Salvar Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Save() then ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end end })
+Settings:Button({ Title = "Carregar Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); if config:Load() then end end })
+Settings:Button({ Title = "Deletar Config", Callback = function() local config = ConfigManager:CreateConfig(CurrentConfigName); config:Delete(); ConfigDropdown:Refresh(ConfigManager:AllConfigs()) end })
+wind:Notify({ Title = "BEM-VINDO À APEX | MVSD", Duration = 15, Icon = "rbxassetid://114305907211721" })
