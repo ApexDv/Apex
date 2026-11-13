@@ -223,7 +223,6 @@ local function CharacterRayOrigin(char)
 local function ShootGun(target)
     local myChar = Player.Character
     if not myChar then return end
-    
     -- TRAVA 1: Se estiver com a faca na mão, não atira
     local equippedTool = myChar:FindFirstChildOfClass("Tool")
     if equippedTool and (string.find(string.lower(equippedTool.Name), "knife") or string.find(string.lower(equippedTool.Name), "faca")) then 
