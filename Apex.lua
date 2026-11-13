@@ -1198,8 +1198,8 @@ end
 local function is_in_fov(target_position)
     local screen_pos, on_screen = Camera:WorldToViewportPoint(target_position)
     if not on_screen then return false end
-    local mouse_pos = UserInputService:GetMouseLocation()
-    local distance = math.sqrt((screen_pos.X - mouse_pos.X) ^ 2 + (screen_pos.Y - mouse_pos.Y) ^ 2)
+    local screen_center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local distance = math.sqrt((screen_pos.X - screen_center.X) ^ 2 + (screen_pos.Y - screen_center.Y) ^ 2)
     return distance <= fov_radius
 end
 local function has_clear_los(from_pos, to_pos, target_character)
