@@ -220,32 +220,45 @@ local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
-end
 local function ShootGun(target)
     local myChar = Player.Character
     if not myChar then return end
+    
+    -- TRAVA 1: Se estiver com a faca na mão, não atira
+    local equippedTool = myChar:FindFirstChildOfClass("Tool")
+    if equippedTool and (string.find(string.lower(equippedTool.Name), "knife") or string.find(string.lower(equippedTool.Name), "faca")) then 
+        return 
+    end
+
     local origin = CharacterRayOrigin(myChar)
     if not origin then return end
     local hitPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+    
+    -- TRAVA 2: Pega a arma e se não tiver arma equipada, cancela o tiro
     local tool = getGun()
     if not tool then return end 
+    
     if hitPart then
         canShoot = false
         local targetPos = hitPart.Position
+        
         local startPos = origin
         if tool then
             local muzzle = tool:FindFirstChild("Muzzle", true)
             if muzzle then startPos = muzzle.WorldPosition end
         end
+
         BulletRenderer(startPos, targetPos)
         ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos, hitPart, targetPos)
+        
         if tool then
             local sound = tool:FindFirstChild("Fire")
             if sound and sound:IsA("Sound") then sound:Play() end
         end
+        
         task.delay(2.5, function() canShoot = true end)
     end
-end
+    end
 local lastNotify = 0
 local function NotSupportedFeature()
     local currentTime = tick()
