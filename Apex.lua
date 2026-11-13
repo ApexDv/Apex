@@ -286,9 +286,9 @@ local function NotSupportedFeature()
 end
 local function FeatureActivated(boolean)
     if boolean then
-        wind:Notify({ Title = "Activated Feature!!", Content = "Enjoying APEX? Join our discord server!", Duration = 3, Icon = "rbxassetid://139687752061139" })
+        wind:Notify({ Title = "Activated Feature!!", Content = "Enjoying APEX? Join our discord server!", Duration = 3, Icon = "rbxassetid://114305907211721" })
     else
-        wind:Notify({ Title = "Disabled Feature!!", Content = "Enjoying APEX? Join our discord server!", Duration = 3, Icon = "rbxassetid://139687752061139" })
+        wind:Notify({ Title = "Disabled Feature!!", Content = "Enjoying APEX? Join our discord server!", Duration = 3, Icon = "rbxassetid://114305907211721" })
     end
 end
 
