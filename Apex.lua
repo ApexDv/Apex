@@ -20,7 +20,11 @@ local window = wind:CreateWindow({
     BackgroundImageTransparency = 0.42,
     HideSearchBar = true,
     ScrollBarEnabled = false,
-    User = { Enabled = true, Anonymous = true, Callback = function() end },
+    User = {
+        Enabled = true,
+        Anonymous = true,
+        Callback = function() end,
+    },
 })
 window:EditOpenButton({
     Title = "APEX",
@@ -85,11 +89,7 @@ local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local Camera = Workspace.CurrentCamera
 local Player = Players.LocalPlayer
-task.spawn(function()
-    while task.wait(5) do
-        limparArmasDoChao()
-    end
-end)
+
 getgenv().match = false
 local canShoot = true
 local matchEnemies = {}
@@ -102,7 +102,6 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
-
 task.spawn(function()
     while task.wait(0.1) do
         local currentMatch = Player:GetAttribute("Match")
@@ -120,7 +119,6 @@ task.spawn(function()
         matchEnemies = tempTable
     end
 end)
-
 task.spawn(function()
     local lastGunTracked = nil
     local soundConnection = nil
@@ -154,13 +152,6 @@ task.spawn(function()
         end
     end
 end)
-local function limparArmasDoChao()
-    for _, v in ipairs(workspace:GetChildren()) do
-        if v:IsA("Tool") then
-            v:Destroy()
-        end
-    end
-end
 local function getGun()
     local character = Player.Character
     local locations = { Player:FindFirstChild("Backpack") }
@@ -203,7 +194,6 @@ local function equipKnife()
     end
     return false
 end
-
 local BulletRendererColor = Color3.fromRGB(255, 255, 255)
 local function BulletRenderer(origin, targetPos)
     local function CreatePseudoPart(cf)
@@ -226,13 +216,11 @@ local function BulletRenderer(origin, targetPos)
     fadeIn:Play(); fadeIn.Completed:Connect(function() fadeOut:Play() end)
     Debris:AddItem(startPart, 0.3); Debris:AddItem(endPart, 0.3)
 end
-
 local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
 end
-
 local function ShootGun(target)
     local myChar = Player.Character
     if not myChar then return end
@@ -258,7 +246,6 @@ local function ShootGun(target)
         task.delay(2.5, function() canShoot = true end)
     end
 end
-
 local lastNotify = 0
 local function NotSupportedFeature()
     local currentTime = tick()
@@ -268,7 +255,6 @@ local function NotSupportedFeature()
         wind:Notify({ Title = "Aviso!", Content = "Se você usa PC, tente o Velocity. No celular, tente o Delta!", Duration = 3, Icon = "rbxassetid://114305907211721" })
     end
 end
-
 local function FeatureActivated(boolean)
     if boolean then
         wind:Notify({ Title = "SISTEMA ATIVADO", Content = "Módulo de combate iniciado.", Duration = 3, Icon = "rbxassetid://114305907211721" })
@@ -424,8 +410,7 @@ local uteuirhguh = Main:Toggle({
                                         params.FilterType = Enum.RaycastFilterType.Exclude
                                         local result = workspace:Raycast(myRoot.Position, (enemyHrp.Position - myRoot.Position), params)
                                         if dist < shortestDist and not result then
-                                            shortestDist = dist
-                                            closestTarget = player.Character
+                                            shortestDist = dist; closestTarget = player.Character
                                         end
                                     end
                                 end
@@ -455,7 +440,7 @@ local function triggerbot_valid_enemy(enemy)
     local hrp = character:FindFirstChild("HumanoidRootPart")
     local my_hrp = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
     if not (humanoid and hrp and my_hrp) then return false end
-        if humanoid.Health <= 0 then return false end
+    if humanoid.Health <= 0 then return false end
     if Collection:HasTag(character, "Invulnerable") or Collection:HasTag(character, "SpeedTrail") then return false end
     return true
 end
@@ -789,7 +774,7 @@ Esp:Colorpicker({ Title = "Cor do Inimigo", Desc = "Cor do ESP para inimigos.", 
 local Killing = window:Tab({ Title = "Kill All", Icon = "skull", Locked = false })
 getgenv().autoKillGun = false
 Killing:Button({
-    Title = "[Gun] Matar todos",
+    Title = "[ARMA] Matar todos (uma vez)",
     Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
@@ -814,7 +799,7 @@ Killing:Button({
     end
 })
 Killing:Toggle({
-    Title = "[Gun] Matar todos",
+    Title = "[ARMA] Matar todos (Auto)",
     Desc = "Fica eliminando todos os jogadores sem parar usando a arma.",
     Value = false,
     Callback = function(state)
@@ -845,7 +830,7 @@ task.spawn(function()
 end)
 getgenv().autoKillKnife = false
 Killing:Button({
-    Title = "[Knife] Matar todos (uma vez)",
+    Title = "[FACA] Matar todos (uma vez)",
     Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
@@ -870,7 +855,7 @@ Killing:Button({
     end
 })
 Killing:Toggle({
-    Title = "[Knife] Matar todos",
+    Title = "[FACA] Matar todos (Auto)",
     Desc = "Fica eliminando todos os jogadores sem parar usando a faca.",
     Value = false,
     Callback = function(state)
