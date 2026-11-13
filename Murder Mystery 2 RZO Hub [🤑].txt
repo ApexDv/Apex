@@ -1,0 +1,571 @@
+--[[
+    ╔═══════════════════════════════════════════════════════════╗
+    ║              Murder Mystery ESP Script                     ║
+    ║                   Made by RZO Hub                          ║
+    ╚═══════════════════════════════════════════════════════════╝
+    
+    Features:
+    - Role-based ESP (Innocent, Armed Innocent, Murderer, Sheriff)
+    - Gun ESP when sheriff dies/drops
+    - Toggle controls for each ESP type
+    - Rayfield UI Integration
+    - Does not ESP yourself
+    - Fixed role detection and round reset
+]]
+
+-- Load Rayfield Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- ESP Settings
+local ESPSettings = {
+    Innocent = {enabled = true, color = Color3.fromRGB(0, 255, 0)},
+    InnocentGun = {enabled = true, color = Color3.fromRGB(255, 255, 255)},
+    Murderer = {enabled = true, color = Color3.fromRGB(255, 0, 0)},
+    Sheriff = {enabled = true, color = Color3.fromRGB(0, 150, 255)},
+    Gun = {enabled = true, color = Color3.fromRGB(255, 215, 0)}
+}
+
+-- ESP Storage
+local ESPObjects = {}
+local GunESP = nil
+local UpdateConnection = nil
+local roles = {}
+local detectedSheriff = nil
+local detectedMurderer = nil
+local gunDropped = false
+
+-- Create Window
+local Window = Rayfield:CreateWindow({
+    Name = "RZO Hub | Murder Mystery 2",
+    LoadingTitle = "RZO Hub Loading...",
+    LoadingSubtitle = "Murder Mystery ESP",
+    ConfigurationSaving = {
+        Enabled = false,
+        FolderName = nil,
+        FileName = "RZO_MM_ESP"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvitelink",
+        RememberJoins = false
+    },
+    KeySystem = false
+})
+
+-- Notification
+Rayfield:Notify({
+    Title = "RZO Hub",
+    Content = "Murder Mystery ESP Loaded Successfully!",
+    Duration = 5,
+    Image = 4483362458,
+    Actions = {
+        Ignore = {
+            Name = "Okay!",
+            Callback = function()
+                print("Notification dismissed")
+            end
+        },
+    },
+})
+
+-- Main Tab
+local MainTab = Window:CreateTab("ESP Controls", 4483362458)
+
+-- Info Section
+local InfoSection = MainTab:CreateSection("RZO Hub - Murder Mystery ESP")
+
+MainTab:CreateLabel("Toggle ESP for different roles below")
+
+-- ESP Section
+local ESPSection = MainTab:CreateSection("Player ESP Toggles")
+
+-- Toggle for Innocent ESP
+local InnocentToggle = MainTab:CreateToggle({
+    Name = "Innocent ESP (Green)",
+    CurrentValue = true,
+    Flag = "InnocentESP",
+    Callback = function(Value)
+        ESPSettings.Innocent.enabled = Value
+    end,
+})
+
+-- Toggle for Innocent with Gun ESP
+local InnocentGunToggle = MainTab:CreateToggle({
+    Name = "Innocent with Gun ESP (White)",
+    CurrentValue = true,
+    Flag = "InnocentGunESP",
+    Callback = function(Value)
+        ESPSettings.InnocentGun.enabled = Value
+    end,
+})
+
+-- Toggle for Murderer ESP
+local MurdererToggle = MainTab:CreateToggle({
+    Name = "Murderer ESP (Red)",
+    CurrentValue = true,
+    Flag = "MurdererESP",
+    Callback = function(Value)
+        ESPSettings.Murderer.enabled = Value
+    end,
+})
+
+-- Toggle for Sheriff ESP
+local SheriffToggle = MainTab:CreateToggle({
+    Name = "Sheriff ESP (Blue)",
+    CurrentValue = true,
+    Flag = "SheriffESP",
+    Callback = function(Value)
+        ESPSettings.Sheriff.enabled = Value
+    end,
+})
+
+-- Gun ESP Section
+local GunSection = MainTab:CreateSection("Dropped Gun ESP")
+
+-- Toggle for Gun ESP
+local GunToggle = MainTab:CreateToggle({
+    Name = "Dropped Gun ESP (Gold)",
+    CurrentValue = true,
+    Flag = "GunESP",
+    Callback = function(Value)
+        ESPSettings.Gun.enabled = Value
+    end,
+})
+
+-- Settings Tab
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
+
+local SettingsSection = SettingsTab:CreateSection("ESP Settings")
+
+SettingsTab:CreateLabel("Additional settings and information")
+
+-- Manual Reset Button
+local ResetButton = SettingsTab:CreateButton({
+    Name = "Reset Roles (New Round)",
+    Callback = function()
+        initializeRoles()
+        Rayfield:Notify({
+            Title = "RZO Hub",
+            Content = "Roles have been reset!",
+            Duration = 3,
+        })
+    end,
+})
+
+-- Info Button
+local InfoButton = SettingsTab:CreateButton({
+    Name = "Script Information",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "RZO Hub",
+            Content = "Murder Mystery ESP v2.0 - Fixed Role Detection!",
+            Duration = 5,
+        })
+    end,
+})
+
+-- Destroy Button
+local DestroyButton = SettingsTab:CreateButton({
+    Name = "Unload Script",
+    Callback = function()
+        -- Clean up all ESP
+        for player, esp in pairs(ESPObjects) do
+            removeESP(player)
+        end
+        
+        if GunESP then
+            for _, drawing in pairs(GunESP) do
+                pcall(function()
+                    drawing:Remove()
+                end)
+            end
+        end
+        
+        if UpdateConnection then
+            UpdateConnection:Disconnect()
+        end
+        
+        Rayfield:Destroy()
+        
+        print("RZO Hub - Murder Mystery ESP Unloaded")
+    end,
+})
+
+-- ESP Creation Functions
+local function createESP(player)
+    if player == LocalPlayer then return end
+    
+    local esp = {
+        player = player,
+        drawings = {}
+    }
+    
+    -- Create box outline
+    local box = Drawing.new("Square")
+    box.Thickness = 2
+    box.Filled = false
+    box.Transparency = 1
+    box.Visible = false
+    box.ZIndex = 2
+    
+    -- Create name tag
+    local name = Drawing.new("Text")
+    name.Size = 18
+    name.Center = true
+    name.Outline = true
+    name.OutlineColor = Color3.new(0, 0, 0)
+    name.Visible = false
+    name.ZIndex = 2
+    name.Text = player.Name
+    
+    -- Create distance text
+    local distance = Drawing.new("Text")
+    distance.Size = 16
+    distance.Center = true
+    distance.Outline = true
+    distance.OutlineColor = Color3.new(0, 0, 0)
+    distance.Visible = false
+    distance.ZIndex = 2
+    
+    -- Create role text
+    local roleText = Drawing.new("Text")
+    roleText.Size = 16
+    roleText.Center = true
+    roleText.Outline = true
+    roleText.OutlineColor = Color3.new(0, 0, 0)
+    roleText.Visible = false
+    roleText.ZIndex = 2
+    
+    esp.drawings.box = box
+    esp.drawings.name = name
+    esp.drawings.distance = distance
+    esp.drawings.roleText = roleText
+    
+    ESPObjects[player] = esp
+end
+
+function removeESP(player)
+    if ESPObjects[player] then
+        for _, drawing in pairs(ESPObjects[player].drawings) do
+            pcall(function()
+                drawing:Remove()
+            end)
+        end
+        ESPObjects[player] = nil
+    end
+end
+
+local function createGunESP()
+    if GunESP then
+        for _, drawing in pairs(GunESP) do
+            pcall(function()
+                drawing:Remove()
+            end)
+        end
+    end
+    
+    GunESP = {}
+    
+    local box = Drawing.new("Square")
+    box.Thickness = 3
+    box.Filled = false
+    box.Transparency = 1
+    box.Color = ESPSettings.Gun.color
+    box.Visible = false
+    box.ZIndex = 2
+    
+    local text = Drawing.new("Text")
+    text.Size = 20
+    text.Center = true
+    text.Outline = true
+    text.OutlineColor = Color3.new(0, 0, 0)
+    text.Color = ESPSettings.Gun.color
+    text.Visible = false
+    text.ZIndex = 2
+    text.Text = "GUN"
+    
+    local distanceText = Drawing.new("Text")
+    distanceText.Size = 16
+    distanceText.Center = true
+    distanceText.Outline = true
+    distanceText.OutlineColor = Color3.new(0, 0, 0)
+    distanceText.Color = ESPSettings.Gun.color
+    distanceText.Visible = false
+    distanceText.ZIndex = 2
+    
+    GunESP.box = box
+    GunESP.text = text
+    GunESP.distance = distanceText
+end
+
+-- Initialize roles at start
+function initializeRoles()
+    roles = {}
+    detectedSheriff = nil
+    detectedMurderer = nil
+    gunDropped = false
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            roles[player] = "Innocent"
+        end
+    end
+    
+    print("RZO Hub: Roles reset for new round")
+end
+
+-- Detect round changes
+local function detectRoundChange()
+    local playersWithRoles = 0
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        
+        local character = player.Character
+        if not character then continue end
+        
+        local backpack = player.Backpack
+        
+        -- Count players with weapons
+        if character:FindFirstChild("Knife") or (backpack and backpack:FindFirstChild("Knife")) then
+            playersWithRoles = playersWithRoles + 1
+        end
+        
+        if character:FindFirstChild("Gun") or (backpack and backpack:FindFirstChild("Gun")) then
+            playersWithRoles = playersWithRoles + 1
+        end
+    end
+    
+    -- If no one has weapons and we had detected roles before, it's a new round
+    if playersWithRoles == 0 and (detectedSheriff or detectedMurderer) then
+        initializeRoles()
+    end
+end
+
+-- Role Detection
+local function getPlayerRole(player)
+    if player == LocalPlayer then return "LocalPlayer" end
+    
+    local character = player.Character
+    if not character then return roles[player] or "Innocent" end
+    
+    local backpack = player.Backpack
+    local humanoid = character:FindFirstChild("Humanoid")
+    
+    -- If player is dead, keep their last known role but don't show ESP
+    if humanoid and humanoid.Health <= 0 then
+        return roles[player] or "Innocent"
+    end
+    
+    -- Check for knife (Murderer) - Priority check
+    local hasKnife = character:FindFirstChild("Knife") or (backpack and backpack:FindFirstChild("Knife"))
+    if hasKnife then
+        roles[player] = "Murderer"
+        detectedMurderer = player
+        return "Murderer"
+    end
+    
+    -- Check for gun
+    local hasGun = character:FindFirstChild("Gun") or (backpack and backpack:FindFirstChild("Gun"))
+    
+    if hasGun then
+        -- First person to have gun is sheriff
+        if not detectedSheriff or detectedSheriff == player then
+            roles[player] = "Sheriff"
+            detectedSheriff = player
+            return "Sheriff"
+        else
+            -- Someone else picked up the gun (armed innocent)
+            roles[player] = "InnocentGun"
+            gunDropped = true
+            return "InnocentGun"
+        end
+    end
+    
+    -- If this player was sheriff but no longer has gun, mark as gun dropped
+    if roles[player] == "Sheriff" and not hasGun then
+        gunDropped = true
+        roles[player] = "Innocent"
+    end
+    
+    -- Default to innocent
+    if not roles[player] or roles[player] == "Unknown" then
+        roles[player] = "Innocent"
+    end
+    
+    return roles[player]
+end
+
+local function findDroppedGun()
+    -- Only show dropped gun if sheriff lost it
+    if not gunDropped then return nil end
+    
+    -- Look for gun dropped in workspace
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name == "GunDrop" then
+            local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildWhichIsA("BasePart")
+            if handle then
+                return handle
+            end
+        end
+    end
+    
+    -- Check workspace children for gun tool
+    for _, obj in pairs(Workspace:GetChildren()) do
+        if obj:IsA("Tool") and obj.Name == "Gun" then
+            local handle = obj:FindFirstChild("Handle")
+            if handle then
+                -- Make sure it's not in a player's character or backpack
+                local isInPlayer = false
+                for _, plr in pairs(Players:GetPlayers()) do
+                    if plr.Character and obj:IsDescendantOf(plr.Character) then
+                        isInPlayer = true
+                        break
+                    end
+                    if plr.Backpack and obj:IsDescendantOf(plr.Backpack) then
+                        isInPlayer = true
+                        break
+                    end
+                end
+                
+                if not isInPlayer then
+                    return handle
+                end
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- Update ESP
+local function updateESP()
+    if not Camera then
+        Camera = Workspace.CurrentCamera
+        return
+    end
+    
+    -- Check for round changes
+    detectRoundChange()
+    
+    -- Update player ESP
+    for player, esp in pairs(ESPObjects) do
+        if not player or not player.Parent then
+            removeESP(player)
+            continue
+        end
+        
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
+            local hrp = character.HumanoidRootPart
+            local humanoid = character.Humanoid
+            local head = character:FindFirstChild("Head")
+            
+            -- Only show ESP for alive players
+            if humanoid.Health > 0 and head then
+                local hrpPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                
+                if onScreen then
+                    local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    local height = math.abs(headPos.Y - legPos.Y)
+                    local width = height / 2
+                    
+                    -- Get role and determine color
+                    local role = getPlayerRole(player)
+                    local roleConfig = ESPSettings[role] or ESPSettings.Innocent
+                    
+                    -- Update box
+                    if roleConfig.enabled then
+                        esp.drawings.box.Size = Vector2.new(width, height)
+                        esp.drawings.box.Position = Vector2.new(hrpPos.X - width / 2, hrpPos.Y - height / 2)
+                        esp.drawings.box.Color = roleConfig.color
+                        esp.drawings.box.Visible = true
+                    else
+                        esp.drawings.box.Visible = false
+                    end
+                    
+                    -- Update name
+                    if roleConfig.enabled then
+                        esp.drawings.name.Position = Vector2.new(hrpPos.X, headPos.Y - 20)
+                        esp.drawings.name.Text = player.Name
+                        esp.drawings.name.Color = roleConfig.color
+                        esp.drawings.name.Visible = true
+                    else
+                        esp.drawings.name.Visible = false
+                    end
+                    
+                    -- Update distance
+                    local dist = math.floor((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and 
+                                 (LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude) or 0)
+                    
+                    if roleConfig.enabled then
+                        esp.drawings.distance.Position = Vector2.new(hrpPos.X, legPos.Y + 5)
+                        esp.drawings.distance.Text = tostring(dist) .. " studs"
+                        esp.drawings.distance.Color = roleConfig.color
+                        esp.drawings.distance.Visible = true
+                    else
+                        esp.drawings.distance.Visible = false
+                    end
+                    
+                    -- Update role text
+                    if roleConfig.enabled then
+                        local roleNames = {
+                            Innocent = "Innocent",
+                            InnocentGun = "Armed Innocent",
+                            Murderer = "MURDERER",
+                            Sheriff = "Sheriff"
+                        }
+                        
+                        esp.drawings.roleText.Position = Vector2.new(hrpPos.X, headPos.Y - 35)
+                        esp.drawings.roleText.Text = "[" .. (roleNames[role] or "Unknown") .. "]"
+                        esp.drawings.roleText.Color = roleConfig.color
+                        esp.drawings.roleText.Visible = true
+                    else
+                        esp.drawings.roleText.Visible = false
+                    end
+                else
+                    esp.drawings.box.Visible = false
+                    esp.drawings.name.Visible = false
+                    esp.drawings.distance.Visible = false
+                    esp.drawings.roleText.Visible = false
+                end
+            else
+                esp.drawings.box.Visible = false
+                esp.drawings.name.Visible = false
+                esp.drawings.distance.Visible = false
+                esp.drawings.roleText.Visible = false
+            end
+        else
+            esp.drawings.box.Visible = false
+            esp.drawings.name.Visible = false
+            esp.drawings.distance.Visible = false
+            esp.drawings.roleText.Visible = false
+        end
+    end
+    
+    -- Update gun ESP
+    if ESPSettings.Gun.enabled then
+        local gunHandle = findDroppedGun()
+        
+        if gunHandle and GunESP then
+            local gunPos, onScreen = Camera:WorldToViewportPoint(gunHandle.Position)
+            
+            if onScreen then
+                -- Box
+                GunESP.box.Size = Vector2.new(50, 50)
+                GunESP.box.Position = Vector2.new(gunPos.X - 25, gunPos.Y - 25)
+                GunESP.box.Visible = true
+                
+                -- Text
+                Gun
