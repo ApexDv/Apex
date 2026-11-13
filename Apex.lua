@@ -20,11 +20,7 @@ local window = wind:CreateWindow({
     BackgroundImageTransparency = 0.42,
     HideSearchBar = true,
     ScrollBarEnabled = false,
-    User = {
-        Enabled = true,
-        Anonymous = true,
-        Callback = function() end,
-    },
+    User = { Enabled = true, Anonymous = true, Callback = function() end },
 })
 window:EditOpenButton({
     Title = "APEX",
@@ -48,7 +44,7 @@ local Welcome = window:Tab({
     Locked = false,
 })
 Welcome:Paragraph({
-    Title = " BEM-VINDO À APEX",
+    Title = "BEM-VINDO À APEX",
     Desc = "O melhor script para dominar o servidor. Entre no nosso Discord para novidades e atualizações.",
     Color = Color3.fromHex("#1756B8"),
     Thumbnail = "rbxassetid://114305907211721",
@@ -220,10 +216,13 @@ local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
-    local function ShootGun(target)
+end
+
+-- FUNÇÃO DE TIRO COM TRAVAS
+local function ShootGun(target)
     local myChar = Player.Character
     if not myChar then return end
-    -- TRAVA 1: Se estiver com a faca na mão, não atira
+    
     local equippedTool = myChar:FindFirstChildOfClass("Tool")
     if equippedTool and (string.find(string.lower(equippedTool.Name), "knife") or string.find(string.lower(equippedTool.Name), "faca")) then 
         return 
@@ -233,31 +232,27 @@ local function CharacterRayOrigin(char)
     if not origin then return end
     local hitPart = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
     
-    -- TRAVA 2: Pega a arma e se não tiver arma equipada, cancela o tiro
     local tool = getGun()
     if not tool then return end 
     
     if hitPart then
         canShoot = false
         local targetPos = hitPart.Position
-        
         local startPos = origin
         if tool then
             local muzzle = tool:FindFirstChild("Muzzle", true)
             if muzzle then startPos = muzzle.WorldPosition end
         end
-
         BulletRenderer(startPos, targetPos)
         ReplicatedStorage.Remotes.ShootGun:FireServer(origin, targetPos, hitPart, targetPos)
-        
         if tool then
             local sound = tool:FindFirstChild("Fire")
             if sound and sound:IsA("Sound") then sound:Play() end
         end
-        
         task.delay(2.5, function() canShoot = true end)
     end
-    end
+end
+
 local lastNotify = 0
 local function NotSupportedFeature()
     local currentTime = tick()
@@ -786,7 +781,7 @@ Esp:Colorpicker({ Title = "Cor do Inimigo", Desc = "Cor do ESP para inimigos.", 
 local Killing = window:Tab({ Title = "Kill All", Icon = "skull", Locked = false })
 getgenv().autoKillGun = false
 Killing:Button({
-    Title = "[ARMA] Matar todos (uma vez)",
+    Title = "[ARMA] Matar todos (Uma vez)",
     Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
@@ -842,7 +837,7 @@ task.spawn(function()
 end)
 getgenv().autoKillKnife = false
 Killing:Button({
-    Title = "[FACA] Matar todos (uma vez)",
+    Title = "[FACA] Matar todos (Uma vez)",
     Desc = "Mata todos os jogadores do servidor uma vez.",
     Locked = false,
     Callback = function()
