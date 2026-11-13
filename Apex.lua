@@ -1253,7 +1253,7 @@ RunService.Heartbeat:Connect(function()
 end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if fov_manualShoot_enabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if fov_manualShoot_enabled and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
         local current_time = tick()
         if current_time - fov_last_shot < fov_shoot_cooldown then return end
         local my_char = Player.Character
