@@ -220,7 +220,7 @@ local function CharacterRayOrigin(char)
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     return (hrp.CFrame * CFrame.new(0, 0, hrp.Size.Z / 2)).Position
-local function ShootGun(target)
+    local function ShootGun(target)
     local myChar = Player.Character
     if not myChar then return end
     -- TRAVA 1: Se estiver com a faca na mão, não atira
